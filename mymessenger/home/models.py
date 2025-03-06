@@ -9,7 +9,7 @@ class Message(models.Model):
     is_read = models.BooleanField('Seen', default=False)
 
     def __str__(self):
-        return self.content
+        return f"Content: {self.content} | Published at: {self.pud_date} | Is read or not: {self.is_read}"
 
 
 # class Chat(models.Model):

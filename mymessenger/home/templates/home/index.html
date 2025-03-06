@@ -6,7 +6,19 @@
 </head>
 <body>
     {% for message in messages %}
-        <h4>Сообщение: {{ message }}!</h4>
+        <h4>Сообщение: {{ message }}</h4>
     {% endfor %}
+
+
+    <form method="POST">
+        <table>{{message_form}}</table>
+        {% csrf_token %}
+        <input type="submit" value="send">
+    </form>
+
+<!--    <label for="name">Введите сообщение:</label>-->
+<!--    <input type="text" id="name" name="name" size="10">-->
+<!--    <input type="submit" id="send" size="10">-->
+<!--<form action="-" method="post> </form>-->
 </body>
 </html>
