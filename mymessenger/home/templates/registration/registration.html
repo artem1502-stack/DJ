@@ -2,18 +2,20 @@
 
 
 {% block title %}
-    Index
+    Registration
 {% endblock title %}
 
+<h1>Registration</h1>
+
 {% block data %}
-{% for message in messages %}
-        <h4>Сообщение: {{ message }}</h4>
+    {% for user in users %}
+        <h4>User: {{ user }}</h4>
     {% endfor %}
-{% endblock %}
+{% endblock data %}
 
 {% block form %}
     <form method="POST">
-        <table>{{message_form}}</table>
+        {{user_registration_form.as_p}}
         {% csrf_token %}
         <input type="submit" value="send">
     </form>
