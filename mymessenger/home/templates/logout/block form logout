@@ -1,0 +1,11 @@
+{% block form %}
+    <form method="POST">
+        {% csrf_token %}
+        {% if user.is_authenticated %}
+            <h3>Logout (supposed to be a button)</h3>
+        {% else %}
+            <h1>You aren't logged in! You shouldn't be here</h1>
+        {% endif %}
+
+    </form>
+{% endblock %}
