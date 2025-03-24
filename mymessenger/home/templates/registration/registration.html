@@ -8,15 +8,21 @@
 <h1>Registration</h1>
 
 {% block data %}
-    {% for user in users %}
-        <h4>User: {{ user }}</h4>
-    {% endfor %}
+    {% if user.is_authenticated %}
+        <h3>You are already logged in (go to the logout page to log out)</h3>
+    {% else %}
+        {% for user in users %}
+            <h4>User: {{ user }}</h4>
+        {% endfor %}
+    {% endif %}
 {% endblock data %}
 
 {% block form %}
-    <form method="POST">
-        {{user_registration_form.as_p}}
-        {% csrf_token %}
-        <input type="submit" value="send">
-    </form>
+    {% if not user.is_authenticated %}
+        <form method="POST">
+            {{user_registration_form.as_p}}*
+            {% csrf_token %}
+            <input type="submit" value="send">
+        </form>
+    {% endif %}
 {% endblock form %}

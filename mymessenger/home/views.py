@@ -1,7 +1,12 @@
 from django.contrib.auth.models import User
 from django.shortcuts import render
-from .models import Message
-from .forms import MessageForm, UserRegistrationForm
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.views import LoginView, LogoutView
+from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+from .models import Message, Chat
+from .forms import MessageForm, UserRegistrationForm, UserLogInForm
 import sqlite3
 import datetime
 
@@ -52,11 +57,17 @@ def save_input_message(request):
             message.save()
 
 
+@login_required(login_url="/login")
 def index(requests):
     save_input_message(requests)
     messages = get_messages2()
     message_form = MessageForm()
-    return render(requests, 'home/index.html', {'messages': messages, 'message_form': message_form})
+    return render(requests, 'home/index.html', {
+        'messages': messages,
+        'message_form': message_form,
+        'user': requests.user
+        # 'user_is_logged': user_is_logged
+    })
 
 
 def registration(requests):
@@ -76,3 +87,41 @@ def registration(requests):
     users = User.objects.all()
     return render(requests, "registration/registration.html", {'user_registration_form': user_registration_form,
                                                                'users': users})
+
+
+def chat(requests, chat_id):
+    try:
+        cur_chat = Chat.objects.get(chat_id=chat_id)
+        return render(requests, "chat/chat.html", {'chat': cur_chat, 'user': requests.user})
+    except Chat.DoesNotExist:
+        return HttpResponse("Chat not found")
+
+# def logIn(requests):
+#     if requests.method == "POST":
+#         logIn_form = UserLogInForm(requests.POST)
+#
+#         if logIn_form.is_valid():
+#             cd = logIn_form.cleaned_data
+#             user = authenticate(username=cd["username"], password=cd["password"])
+#             if user is not None:
+#                 if user.is_active:
+#                     login(requests, user)
+#                     return HttpResponse("Login successful")
+#                 else:
+#                     return HttpResponse("Account invalid")
+#             else:
+#                 return HttpResponse("Username or password incorrect")
+#
+#     logIn_form = UserLogInForm()
+#     return render(requests, "logIn/logIn.html", {'logIn_form': logIn_form, 'logout': logout})
+
+
+class LogInUser(LoginView):
+    next_page = '/'
+    form_class = UserLogInForm
+    template_name = "logIn/logIn.html"
+
+
+class LogoutUser(LogoutView):
+    # form_class = UserLogoutForm
+    template_name = "logout/logout.html"

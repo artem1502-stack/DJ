@@ -7,6 +7,29 @@
         Default title
         {% endblock title %}
     </title>
+
+    {% if user.is_authenticated %}
+        <i>Welcome, {{ user }}!</i>
+        <form action='{% url "logout" %}' target="_blank">
+           <button>Log out</button>
+        </form>
+    {% endif %}
+
+    {% if not user.is_authenticated %}
+        {% if request.path != "/login" %}
+            <h4>Have an account?</h4>
+            <form action='{% url "login" %}' target="_blank">
+               <button>Log in</button>
+            </form>
+        {% endif %}
+        {% if request.path != "/registration" %}
+            <h4>New here?</h4>
+            <form action='{% url "registration" %}' target="_blank">
+               <button>Registration</button>
+        {% endif %}
+    </form>
+
+    {% endif %}
 </head>
 <body>
     {% block data %}
