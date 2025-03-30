@@ -16,12 +16,17 @@ class Chat(models.Model):
         choices=CHAT_TYPE_CHOICES,
         default=DIALOG
         )
+    name = models.CharField('Имя', max_length=80)
     members = models.ManyToManyField(User, verbose_name="Участник")
-    chat_id = models.AutoField(unique=True, editable=False, primary_key=True)
+    # chat_id = models.AutoField(unique=True, editable=False, primary_key=True)
 
     def __str__(self):
-        s = f"{self.type} \n {self.members} \n"
-        messages = Message.objects.get(chat=self.chat_id)
+        m = User.objects.filter(chat__id=self.id)
+        s = f"{self.type} \n {m} \n"
+        try:
+            messages = Message.objects.get(chat=self.id)
+        except Message.DoesNotExist:
+            messages = []
         return s+"\n".join(messages)
 
     # @models.permalink
@@ -35,6 +40,7 @@ class Message(models.Model):
     is_read = models.BooleanField('Seen', default=False)
     message_id = models.AutoField(unique=True, editable=False, primary_key=True)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
         return f"Content: {self.content} | Published at: {self.pud_date} | Is read or not: {self.is_read}"

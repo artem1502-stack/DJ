@@ -1,12 +1,11 @@
 from django.contrib.auth.models import User
 from django.shortcuts import render
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.views import LoginView, LogoutView
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import logout
 from .models import Message, Chat
-from .forms import MessageForm, UserRegistrationForm, UserLogInForm
+from .forms import MessageForm, UserRegistrationForm, UserLogInForm, ChatForm
+from django.db import models
 import sqlite3
 import datetime
 
@@ -21,6 +20,11 @@ def get_messages():
 def get_messages2():
     messages = Message.objects.all()
     return messages
+
+
+def get_chats(request):
+    chats = Chat.objects.filter(members=request.user)
+    return chats
 
 
 def save_input_message(request):
@@ -60,11 +64,19 @@ def save_input_message(request):
 @login_required(login_url="/login")
 def index(requests):
     save_input_message(requests)
-    messages = get_messages2()
-    message_form = MessageForm()
+    # messages = get_messages2()
+    chats = get_chats(requests)
+    # message_form = MessageForm()
+
+    # if requests.method == "POST" and "create-chat" in requests.POST:
+    #     return render(requests, 'chat/create-chat.html', {
+    #         'user': requests.user
+    #     })
+
     return render(requests, 'home/index.html', {
-        'messages': messages,
-        'message_form': message_form,
+        # 'messages': messages,
+        'chats': chats,
+        # 'message_form': message_form,
         'user': requests.user
         # 'user_is_logged': user_is_logged
     })
@@ -89,31 +101,34 @@ def registration(requests):
                                                                'users': users})
 
 
-def chat(requests, chat_id):
+def create_chat(requests):
+    chat_form = ChatForm()
+    choose_type = True
+    if requests.method == "POST" and "type_chosen" in requests.POST:
+        chat_form = ChatForm(requests.POST)
+
+        if chat_form.is_valid():
+            new_chat = chat_form.save()
+            new_chat.save()
+            return HttpResponse("New chat created")
+        return HttpResponse("Chat created")
+    # if requests.method == "POST" and "type_chosen" in requests.POST:
+    #     choose_type = False
+    #     type = requests.POST.get("type")
+    #     return render(requests, "chat/create-chat.html", {
+    #         'chat_form': chat_form, 'user': requests.user, 'choose_type': choose_type, 'type': type
+    #     })
+    return render(requests, "chat/create-chat.html", {
+        'chat_form': chat_form, 'user': requests.user, 'choose_type': choose_type
+    })
+
+
+def chat(requests, id):
     try:
-        cur_chat = Chat.objects.get(chat_id=chat_id)
+        cur_chat = Chat.objects.get(id=id)
         return render(requests, "chat/chat.html", {'chat': cur_chat, 'user': requests.user})
     except Chat.DoesNotExist:
         return HttpResponse("Chat not found")
-
-# def logIn(requests):
-#     if requests.method == "POST":
-#         logIn_form = UserLogInForm(requests.POST)
-#
-#         if logIn_form.is_valid():
-#             cd = logIn_form.cleaned_data
-#             user = authenticate(username=cd["username"], password=cd["password"])
-#             if user is not None:
-#                 if user.is_active:
-#                     login(requests, user)
-#                     return HttpResponse("Login successful")
-#                 else:
-#                     return HttpResponse("Account invalid")
-#             else:
-#                 return HttpResponse("Username or password incorrect")
-#
-#     logIn_form = UserLogInForm()
-#     return render(requests, "logIn/logIn.html", {'logIn_form': logIn_form, 'logout': logout})
 
 
 class LogInUser(LoginView):

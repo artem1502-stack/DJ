@@ -5,5 +5,7 @@
 {% endblock title %}
 
 {% block data %}
-  {{chat}}
+    <h1>{{chat.id}}</h1>
+    <h2>{{chat}}</h2>
+    {% csrf_token %}
 {% endblock data %}

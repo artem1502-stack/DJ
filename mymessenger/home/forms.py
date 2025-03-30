@@ -1,11 +1,31 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Message
+from django.db import models
+from .models import Chat
 
 
 class ChatForm(forms.ModelForm):
-    ...
+    DIALOG = 'D'
+    CHAT = 'C'
+    CHAT_TYPE_CHOICES = (
+        (DIALOG, 'Dialog'),
+        (CHAT, 'Chat'))
+
+    type = models.CharField(
+        'Тип',
+        max_length=1,
+        choices=CHAT_TYPE_CHOICES,
+        default=DIALOG
+        )
+
+    name = models.CharField('name', max_length=80)
+    members = models.ManyToManyField(User, verbose_name="member")
+    # chat_id = models.AutoField(unique=True, primary_key=True)
+
+    class Meta:
+        model = Chat
+        fields = ("type", "members", "name")
 
 
 class MessageForm(forms.Form):

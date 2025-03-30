@@ -6,14 +6,20 @@
 {% endblock title %}
 
 {% block data %}
-
-    <h3>Your chats:</h3>
-    {% for chat in chats %}
-        <h4>{{ chat }}</h4>
+{% for message in messages %}
+        <h4>Сообщение: {{ message }}</h4>
     {% endfor %}
 {% endblock %}
 
 {% block form %}
+    <form method="POST">
+        <table>{{message_form}}</table>
+        {% csrf_token %}
+        <input type="submit" value="send">
+    </form>
+
+    <h1> </h1>
+
     <form action='{% url "create-chat" %}' target="_blank">
        <button>Create a new chat</button>
     </form>
