@@ -1,11 +1,14 @@
 from django.contrib.auth.models import User
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.core.exceptions import PermissionDenied
 from django.contrib.auth.views import LoginView, LogoutView
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from .models import Message, Chat
 from .forms import MessageForm, UserRegistrationForm, UserLogInForm, ChatForm
 from django.db import models
+from django.contrib.auth.decorators import permission_required
 import sqlite3
 import datetime
 
@@ -22,9 +25,22 @@ def get_messages2():
     return messages
 
 
-def get_chats(request):
-    chats = Chat.objects.filter(members=request.user)
-    return chats
+def get_chats(user):
+    chats = Chat.objects.filter(members=user)
+
+    chat_data = []
+    for chat in chats:
+
+        cur_members = (chat.members.all())
+        if chat.type == "D":
+            name = str(chat.members.all()[0])
+        else:
+            name = chat.name
+
+        cur_chat = f"{chat.id}) Name: {name} ({chat.type}) \ \ \n Users: {list(map(str, cur_members))}"
+        chat_data.append(cur_chat)
+
+    return chat_data
 
 
 def save_input_message(request):
@@ -64,27 +80,18 @@ def save_input_message(request):
 @login_required(login_url="/login")
 def index(requests):
     save_input_message(requests)
-    # messages = get_messages2()
-    chats = get_chats(requests)
-    # message_form = MessageForm()
-
-    # if requests.method == "POST" and "create-chat" in requests.POST:
-    #     return render(requests, 'chat/create-chat.html', {
-    #         'user': requests.user
-    #     })
+    # chats = get_chats(requests.user)
+    chats = Chat.objects.filter(members=requests.user)
 
     return render(requests, 'home/index.html', {
-        # 'messages': messages,
         'chats': chats,
-        # 'message_form': message_form,
         'user': requests.user
-        # 'user_is_logged': user_is_logged
     })
 
 
 def registration(requests):
     save_input_message(requests)
-    messages = get_messages2()
+    # messages = get_messages2()
 
     if requests.method == "POST":
         user_form = UserRegistrationForm(requests.POST)
@@ -94,7 +101,7 @@ def registration(requests):
             new_user.set_password(user_form.cleaned_data["password"])
             new_user.save()
     user_registration_form = UserRegistrationForm()
-    message_form = MessageForm()
+    # message_form = MessageForm()
 
     users = User.objects.all()
     return render(requests, "registration/registration.html", {'user_registration_form': user_registration_form,
@@ -110,8 +117,8 @@ def create_chat(requests):
         if chat_form.is_valid():
             new_chat = chat_form.save()
             new_chat.save()
-            return HttpResponse("New chat created")
-        return HttpResponse("Chat created")
+            return redirect(new_chat)
+        return HttpResponse("Incorrect input (error while creating a chat)")
     # if requests.method == "POST" and "type_chosen" in requests.POST:
     #     choose_type = False
     #     type = requests.POST.get("type")
@@ -123,12 +130,39 @@ def create_chat(requests):
     })
 
 
+def get_messages_in_chat(chat_id):
+    try:
+        messages = Message.objects.filter(chat_id=chat_id)
+    except Message.DoesNotExist:
+        messages = "Your chat is empty :("
+    return messages
+
+
+@login_required(login_url="/login")
+@permission_required("home.view_chat", raise_exception=True)
 def chat(requests, id):
     try:
         cur_chat = Chat.objects.get(id=id)
-        return render(requests, "chat/chat.html", {'chat': cur_chat, 'user': requests.user})
+        if requests.method == "POST" and "send_message" in requests.POST:
+            try:
+                text = requests.POST.get("text")
+                message = Message(content=text, pud_date=timezone.now(), is_read=False, sender=requests.user, chat=cur_chat)
+                message.save()
+            except Message.DoesNotExist:
+                ...
+        chat_messages = get_messages_in_chat(id)
+        for chat_message in chat_messages:
+            if chat_message.sender != requests.user and not chat_message.is_read:
+                chat_message.is_read = True
+                chat_message.save()
+        message_form = MessageForm()
+        return render(requests, "chat/chat.html",
+                      {'chat': cur_chat, 'chat_messages': chat_messages,
+                       'user': requests.user, 'message_form': message_form})
     except Chat.DoesNotExist:
         return HttpResponse("Chat not found")
+    except PermissionDenied:
+        return redirect("/")
 
 
 class LogInUser(LoginView):

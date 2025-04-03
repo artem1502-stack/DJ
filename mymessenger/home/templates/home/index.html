@@ -6,10 +6,11 @@
 {% endblock title %}
 
 {% block data %}
-
     <h3>Your chats:</h3>
     {% for chat in chats %}
-        <h4>{{ chat }}</h4>
+        <h4><a href="chat/{{chat.id}}">Name: {{chat.name}} ({{chat.type}})</a></h4>
+        <p>{% for member in chat.members.all %} {% if member != user %} {{member}}, {%endif%} {%endfor%} </p>
+        <h5>-----------------------------------------------</h5>
     {% endfor %}
 {% endblock %}
 

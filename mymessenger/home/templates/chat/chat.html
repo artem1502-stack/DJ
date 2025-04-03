@@ -5,7 +5,21 @@
 {% endblock title %}
 
 {% block data %}
-    <h1>{{chat.id}}</h1>
-    <h2>{{chat}}</h2>
+    <p>{{chat.id}}</p>
+    <h5>Name: {{chat.name}}</h5>
+    <h5>Members: {{chat.members.all}}</h5>
+    <h4>---------------------------------------</h4>
+    {% for chat_message in chat_messages %}
+        <h3>{{chat_message}}</h3>
+    {% endfor %}
+    <h4>---------------------------------------</h4>
     {% csrf_token %}
 {% endblock data %}
+
+{% block form %}
+    <form method="POST">
+        <p>Enter message: {{message_form.text}}</p>
+        {% csrf_token %}
+        <input type="submit" value="send" name="send_message">
+    </form>
+{% endblock %}

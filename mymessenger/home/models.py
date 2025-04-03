@@ -24,14 +24,14 @@ class Chat(models.Model):
         m = User.objects.filter(chat__id=self.id)
         s = f"{self.type} \n {m} \n"
         try:
-            messages = Message.objects.get(chat=self.id)
+            messages = list(map(str, Message.objects.filter(chat=self.id)))
         except Message.DoesNotExist:
             messages = []
         return s+"\n".join(messages)
 
     # @models.permalink
-    # def get_absolute_url(self):
-    #     return 'users:messages', (), {'chat_id': self.pk}
+    def get_absolute_url(self):
+        return f"/chat/{self.id}"
 
 
 class Message(models.Model):
@@ -43,4 +43,8 @@ class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"Content: {self.content} | Published at: {self.pud_date} | Is read or not: {self.is_read}"
+        if self.is_read:
+            is_read = '✔️'
+        else:
+            is_read = '❌'
+        return f"{self.sender}: {self.content} ({self.pud_date.strftime('%H:%M')}) {is_read}"
