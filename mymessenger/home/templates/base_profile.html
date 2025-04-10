@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}
+    User page
+{% endblock title %}
+
+{% block profile_greeting %}
+    {% if data.first_name != "" %}
+        {% if data.last_name != "" %}
+            <h2>{{data.first_name}} {{data.last_name}}'s profile</h2>
+        {% else %}
+            <h2>{{data.first_name}}'s profile</h2>
+        {% endif %}
+     {% else %}
+        <h2>{{data.username}}'s profile:</h2>
+     {% endif %}
+{% endblock profile_greeting %}
+
+
+{% block data %}
+    {% if data.first_name != "" %}
+        <h4>First name: {{data.first_name}}</h4>
+    {% endif %}
+    {% if data.last_name != "" %}
+        <h4>Last name: {{data.last_name}}</h4>
+    {% endif %}
+    <h4>Username: {{data.username}}</h4>
+    <p>Last logged in: {{data.last_login}}</p>
+    <p>Join date: {{data.date_joined}}</p>
+    {% if data.email != "" %}
+        <p>Email: {{data.email}}</p>
+    {% endif %}
+{% endblock data %}
+
+{% block other_data %}
+
+{% endblock other_data %}

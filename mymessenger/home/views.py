@@ -6,9 +6,11 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .models import Message, Chat
-from .forms import MessageForm, UserRegistrationForm, UserLogInForm, ChatForm
-from django.db import models
+from .forms import MessageForm, UserRegistrationForm, UserLogInForm, ChatForm, ProfileForm
 from django.contrib.auth.decorators import permission_required
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 import sqlite3
 import datetime
 
@@ -89,6 +91,10 @@ def index(requests):
     })
 
 
+def re(request):
+    return redirect("/")
+
+
 def registration(requests):
     save_input_message(requests)
     # messages = get_messages2()
@@ -143,10 +149,13 @@ def get_messages_in_chat(chat_id):
 def chat(requests, id):
     try:
         cur_chat = Chat.objects.get(id=id)
+        if requests.user not in cur_chat.members.all():
+            raise PermissionDenied("Permission Denied")
         if requests.method == "POST" and "send_message" in requests.POST:
             try:
                 text = requests.POST.get("text")
-                message = Message(content=text, pud_date=timezone.now(), is_read=False, sender=requests.user, chat=cur_chat)
+                message = Message(content=text, pud_date=timezone.now(), is_read=False, sender=requests.user,
+                                  chat=cur_chat)
                 message.save()
             except Message.DoesNotExist:
                 ...
@@ -163,6 +172,65 @@ def chat(requests, id):
         return HttpResponse("Chat not found")
     except PermissionDenied:
         return redirect("/")
+
+
+def get_profile_data(username):
+    data = User.objects.get(username=username)
+    return data
+
+
+@login_required(login_url="/login")
+@permission_required("auth.change_user", raise_exception=True)
+def user_profile(requests, username, c_p=False): # c_p stands for changed_password
+    profile_data = get_profile_data(username)
+    profile_form = ProfileForm(initial={
+        "first_name": profile_data.first_name,
+        "last_name": profile_data.last_name,
+        "email": profile_data.email
+    })
+
+    try:
+        if str(requests.user) != username:
+            raise PermissionDenied("Permission Denied")
+
+        user_changed = False
+        if requests.method == "POST" and "change_profile" in requests.POST:
+            profile_data.first_name = requests.POST['first_name']
+            profile_data.last_name = requests.POST['last_name']
+            profile_data.email = requests.POST['email']
+            profile_data.save()
+
+            user_changed = True
+
+            profile_form = ProfileForm(requests.POST, initial={
+                "first_name": profile_data.first_name,
+                "last_name": profile_data.last_name,
+                "email": profile_data.email
+            })
+
+        return render(requests, "user/own_profile.html", {
+            "data": requests.user,
+            "profile_form": profile_form,
+            "user_changed": user_changed})
+
+    except PermissionDenied:
+        return render(requests, "user/other_profile.html", {"user": requests.user, "data": profile_data})
+
+
+def change_password(request, username):
+    if request.method == 'POST' and "save_password" in request.POST:
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Important!
+            # messages.success(request, 'Your password was!')
+            return redirect("logout")
+        # else:
+        #     messages.error(request, 'Please correct the error below.')
+    else:
+        form = PasswordChangeForm(request.user)
+
+    return render(request, "user/change_password.html", {"user": request.user, 'form': form})
 
 
 class LogInUser(LoginView):

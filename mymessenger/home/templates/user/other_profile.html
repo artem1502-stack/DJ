@@ -1,0 +1,9 @@
+{% extends "base_profile.html" %}
+
+{% block other_data %}
+    {% if data.is_active %}
+        <p>This user is active ;)</p>
+    {% else %}
+        <p>This user is not active :(</p>
+    {% endif %}
+{% endblock other_data %}

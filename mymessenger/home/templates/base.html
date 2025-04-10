@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <base href="http://127.0.0.1:8000">
     <meta charset="UTF-8">
     <title>
         {% block title %}
@@ -9,7 +10,7 @@
     </title>
 
     {% if user.is_authenticated %}
-        <i>Welcome, {{ user }}!</i>
+        <i>Welcome, <a href="user/{{user}}">{{ user }}</a>!</i>
         <form action='{% url "logout" %}' target="_blank">
            <button>Log out</button>
         </form>
@@ -32,9 +33,17 @@
     {% endif %}
 </head>
 <body>
+    {% block profile_greeting %}
+
+    {% endblock profile_greeting %}
+
     {% block data %}
 
     {% endblock data %}
+
+    {% block other_data %}
+
+    {% endblock other_data %}
 
     {% block form %}
 

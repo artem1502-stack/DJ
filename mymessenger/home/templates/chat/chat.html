@@ -7,7 +7,10 @@
 {% block data %}
     <p>{{chat.id}}</p>
     <h5>Name: {{chat.name}}</h5>
-    <h5>Members: {{chat.members.all}}</h5>
+    <h5>Members:</h5>
+    {% for member in chat.members.all %}
+        <a href="user/{{member}}"><h4>{{member}}</h4></a>
+    {%endfor%}
     <h4>---------------------------------------</h4>
     {% for chat_message in chat_messages %}
         <h3>{{chat_message}}</h3>

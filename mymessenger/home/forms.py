@@ -35,6 +35,20 @@ class MessageForm(forms.Form):
     boolean_field = forms.BooleanField(required=False)
 
 
+class ProfileForm(forms.ModelForm):
+    # newa_password = forms.CharField(widget=forms.PasswordInput, label="Insert туц password")
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "email")
+        labels = {
+            "first_name": "First name (username by defaul)",
+            "last_name": "Last name (optional)",
+            "email": "Email (optional)",}
+
+class PasswordForm(forms.Form):
+    ...
+
+
 class UserRegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, label="Password")
     check_password = forms.CharField(widget=forms.PasswordInput, label="Insert password again")

@@ -1,0 +1,25 @@
+{% extends "base_profile.html" %}
+
+{% block profile_greeting %}
+    {% if user_changed %}
+        <h3>⋆.˚ Successfully saved! ⋆.˚</h3>
+        <h3>---------------------------------</h3>
+    {% endif %}
+    <h2>Your profile ({{data.username}}):</h2>
+{% endblock profile_greeting %}
+
+{% block other_data %}
+    {% if data.is_active %}
+        <p>Active :D</p>
+    {% endif %}
+{% endblock other_data %}
+
+{% block form %}
+    <h2>Edit profile: </h2>
+    <form method="POST">
+        {{profile_form.as_p}}
+        {% csrf_token %}
+        <input type="submit" value="save" name="change_profile">
+    </form>
+    <a href="/{{data.username}}/change_password"><h4>Change password</h4></a>
+{% endblock %}
