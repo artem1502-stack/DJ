@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 from django.db import models
 from .models import Chat
-
+from django.forms.utils import ErrorList
 
 class ChatForm(forms.ModelForm):
     DIALOG = 'D'
@@ -22,6 +22,23 @@ class ChatForm(forms.ModelForm):
     name = models.CharField('name', max_length=80)
     members = models.ManyToManyField(User, verbose_name="member")
     # chat_id = models.AutoField(unique=True, primary_key=True)
+
+    def clean(self):
+        c_d = super().clean()
+
+        c_type = c_d.get("type")
+        c_members = c_d.get("members")
+
+        if c_type == "D" and len(c_members) > 2:
+            errors = self._errors.setdefault(forms.forms.NON_FIELD_ERRORS, forms.utils.ErrorList())
+            errors.append("My error here")
+            # raise forms.ValidationError(
+            #     "Select only 1 other member for dialog"
+            # )
+        # if c_type == "D" and not c_name:
+        #     raise forms.ValidationError(
+        #         "No name for dialog"
+        #     )
 
     class Meta:
         model = Chat
@@ -44,9 +61,6 @@ class ProfileForm(forms.ModelForm):
             "first_name": "First name (username by defaul)",
             "last_name": "Last name (optional)",
             "email": "Email (optional)",}
-
-class PasswordForm(forms.Form):
-    ...
 
 
 class UserRegistrationForm(forms.ModelForm):

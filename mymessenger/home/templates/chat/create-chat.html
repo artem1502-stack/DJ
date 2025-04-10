@@ -5,6 +5,22 @@
 {% endblock title %}
 
 {% block form %}
+
+    {% if chat_form.errors %}
+        {% for field in chat_form %}
+            {% for error in field.errors %}
+                <div class="alert alert-danger">
+                    <strong>{{ error|escape }}</strong>
+                </div>
+            {% endfor %}
+        {% endfor %}
+        {% for error in chat_form.non_field_errors %}
+            <div class="alert alert-danger">
+                <strong>{{ error|escape }}</strong>
+            </div>
+        {% endfor %}
+    {% endif %}
+
         <form method="POST" name="create-chat">
         {% csrf_token %}
         {% if not user.is_authenticated %}

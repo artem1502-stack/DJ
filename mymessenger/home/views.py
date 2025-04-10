@@ -2,24 +2,19 @@ from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.views import LoginView, LogoutView
+from django.views import View
 from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.urls import reverse
+from django.utils.decorators import method_decorator
 from .models import Message, Chat
 from .forms import MessageForm, UserRegistrationForm, UserLogInForm, ChatForm, ProfileForm
-from django.contrib.auth.decorators import permission_required
-from django.contrib import messages
+from django.contrib.auth.decorators import permission_required, login_required
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
-import sqlite3
+from django_registration.backends.one_step.views import RegistrationView
+from django_registration.signals import user_registered
 import datetime
-
-
-def get_messages():
-    con = sqlite3.connect("./db.sqlite3")
-    cur = con.cursor()
-    cur.execute("SELECT * FROM home_message")
-    return cur.fetchall()
 
 
 def get_messages2():
@@ -79,39 +74,29 @@ def save_input_message(request):
             message.save()
 
 
-@login_required(login_url="/login")
-def index(requests):
-    save_input_message(requests)
-    # chats = get_chats(requests.user)
-    chats = Chat.objects.filter(members=requests.user)
+@method_decorator(login_required, name="dispatch")
+class Index(View):
+    def get(self, request):
+        chats = Chat.objects.filter(members=request.user)
 
-    return render(requests, 'home/index.html', {
-        'chats': chats,
-        'user': requests.user
-    })
-
-
-def re(request):
-    return redirect("/")
+        return render(request, 'home/index.html', {
+            'chats': chats,
+            'user': request.user
+        })
 
 
-def registration(requests):
-    save_input_message(requests)
-    # messages = get_messages2()
+class Registration(RegistrationView):
+    template_name = "registration/registration.html"
+    form_class = UserRegistrationForm
+    disallowed_url = reverse("registration")
+    success_url = reverse("index")
 
-    if requests.method == "POST":
-        user_form = UserRegistrationForm(requests.POST)
-
-        if user_form.is_valid():
-            new_user = user_form.save()
-            new_user.set_password(user_form.cleaned_data["password"])
-            new_user.save()
-    user_registration_form = UserRegistrationForm()
-    # message_form = MessageForm()
-
-    users = User.objects.all()
-    return render(requests, "registration/registration.html", {'user_registration_form': user_registration_form,
-                                                               'users': users})
+    def register(self, form):
+        new_user = form.save()
+        new_user.set_password(form.cleaned_data["password"])
+        new_user.save()
+        user_registered()
+        return new_user
 
 
 def create_chat(requests):
@@ -124,7 +109,9 @@ def create_chat(requests):
             new_chat = chat_form.save()
             new_chat.save()
             return redirect(new_chat)
-        return HttpResponse("Incorrect input (error while creating a chat)")
+        return render(requests, "chat/create-chat.html", {
+        'chat_form': chat_form, 'user': requests.user, 'choose_type': choose_type
+    })
     # if requests.method == "POST" and "type_chosen" in requests.POST:
     #     choose_type = False
     #     type = requests.POST.get("type")
