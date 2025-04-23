@@ -1,14 +1,19 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Create a chat
+    Create a chat/dialog
 {% endblock title %}
 
 {% block form %}
-        <form method="POST" name="create-chat">
+        {% if messages %}
+            {% for message in messages %}
+                {{message}}
+            {% endfor %}
+        {% endif %}
+        <form method="POST" name="create_chat">
         {% csrf_token %}
         {% if not user.is_authenticated %}
-            <h3>You can't create chats since you aren't logged in</h3>
+            <h3>You can't create chats/dialogs since you aren't logged in</h3>
         {% else %}
         {% for c_f in chat_form %}
             <p><label class="form-label" for="{{ c_f.id_for_label }}">{{c_f.label}}: </label>{{ c_f }}</p>

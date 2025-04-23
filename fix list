@@ -1,0 +1,8 @@
+1) Hand out permissions
+2) Work out the member relationship in our Chat/Dialog forms/models
++ Rewrite its type and path
++ (maybe) add separate templates
+3) Go into the user's account after registration
+4) registration function -> Registration class
+5) Username already used message
+6) Displayed name has to change (dialog) depending on the user

@@ -1,25 +1,18 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Permission
+from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeView
+from django.contrib.auth.decorators import login_required, permission_required
+from django.views import View
+from django.views.generic.detail import DetailView
+from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
 from django.shortcuts import render, redirect
 from django.core.exceptions import PermissionDenied
-from django.contrib.auth.views import LoginView, LogoutView
 from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.forms import modelformset_factory
 from .models import Message, Chat
-from .forms import MessageForm, UserRegistrationForm, UserLogInForm, ChatForm, ProfileForm
-from django.contrib.auth.decorators import permission_required
-from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.forms import PasswordChangeForm
-import sqlite3
+from .forms import MessageForm, UserRegistrationForm, UserLoginForm, ChatForm, DialogForm, ProfileForm
 import datetime
-
-
-def get_messages():
-    con = sqlite3.connect("./db.sqlite3")
-    cur = con.cursor()
-    cur.execute("SELECT * FROM home_message")
-    return cur.fetchall()
 
 
 def get_messages2():
@@ -45,8 +38,8 @@ def get_chats(user):
     return chat_data
 
 
-def save_input_message(request):
-    if request.method == "POST":
+class SaveInputMessage(View):
+    def post(self, request):
         form = MessageForm(request.POST)
         if form.is_valid():
             text = request.POST.get("text")
@@ -79,61 +72,70 @@ def save_input_message(request):
             message.save()
 
 
-@login_required(login_url="/login")
-def index(requests):
-    save_input_message(requests)
-    # chats = get_chats(requests.user)
-    chats = Chat.objects.filter(members=requests.user)
+@method_decorator(login_required, name="dispatch")
+class Index(View):
+    def get(self, request):
+        chats = Chat.objects.filter(members=request.user)
 
-    return render(requests, 'home/index.html', {
-        'chats': chats,
-        'user': requests.user
-    })
-
-
-def re(request):
-    return redirect("/")
+        return render(request, 'home/index.html', {
+            'chats': chats,
+            'user': request.user
+        })
 
 
 def registration(requests):
-    save_input_message(requests)
-    # messages = get_messages2()
-
     if requests.method == "POST":
         user_form = UserRegistrationForm(requests.POST)
 
         if user_form.is_valid():
             new_user = user_form.save()
             new_user.set_password(user_form.cleaned_data["password"])
+            # permissions = [("can_change_user", "Can change user"),  ("can_view_user", "Can view user"),
+            # ("can_add_chat", "Can add chat"), ("can_view_chat", "Can change chat"),
+            # ("can_add_message", "Can add message"), ("can_view_message", "Can change message"),
+            # ]
+            permission = Permission.objects.all()
+            new_user.user_permissions.set(permission)
+
             new_user.save()
     user_registration_form = UserRegistrationForm()
-    # message_form = MessageForm()
-
     users = User.objects.all()
     return render(requests, "registration/registration.html", {'user_registration_form': user_registration_form,
                                                                'users': users})
 
 
-def create_chat(requests):
-    chat_form = ChatForm()
-    choose_type = True
-    if requests.method == "POST" and "type_chosen" in requests.POST:
-        chat_form = ChatForm(requests.POST)
+class CreateChatOrDialog(View):
+    def post(self, request, form_template):
+        if "type_chosen" in request.POST:
+            chat_form = form_template(request.POST, request.FILES, user=request.user)
+            if chat_form.is_valid():
+                new_chat = chat_form.save()  # then add current user to queryset (members) probably through cleaned_data
+                new_chat.members.add(request.user)
+                new_chat.save()
+                return redirect(new_chat)
+        else:
+            chat_form = form_template(user=request.user)
+        return render(request, "chat/create_chat.html", {
+            'chat_form': chat_form, 'user': request.user
+        })
 
-        if chat_form.is_valid():
-            new_chat = chat_form.save()
-            new_chat.save()
-            return redirect(new_chat)
-        return HttpResponse("Incorrect input (error while creating a chat)")
-    # if requests.method == "POST" and "type_chosen" in requests.POST:
-    #     choose_type = False
-    #     type = requests.POST.get("type")
-    #     return render(requests, "chat/create-chat.html", {
-    #         'chat_form': chat_form, 'user': requests.user, 'choose_type': choose_type, 'type': type
-    #     })
-    return render(requests, "chat/create-chat.html", {
-        'chat_form': chat_form, 'user': requests.user, 'choose_type': choose_type
-    })
+
+class CreateChat(View):
+
+    def get_post(self, request):
+        c_or_d = CreateChatOrDialog()
+        return c_or_d.post(request=request, form_template=ChatForm)
+
+    def get(self, request):
+        return self.get_post(request)
+
+    def post(self, request):
+        return self.get_post(request)
+
+
+def create_dialog(request):
+    c_or_d = CreateChatOrDialog()
+    return c_or_d.post(request=request, form_template=DialogForm)
 
 
 def get_messages_in_chat(chat_id):
@@ -179,66 +181,78 @@ def get_profile_data(username):
     return data
 
 
-@login_required(login_url="/login")
-@permission_required("auth.change_user", raise_exception=True)
-def user_profile(requests, username, c_p=False): # c_p stands for changed_password
-    profile_data = get_profile_data(username)
-    profile_form = ProfileForm(initial={
-        "first_name": profile_data.first_name,
-        "last_name": profile_data.last_name,
-        "email": profile_data.email
-    })
+@method_decorator(login_required, name="dispatch")
+@method_decorator(permission_required("auth.change_user", raise_exception=True), name="dispatch")
+class UserProfile(View):
 
-    try:
-        if str(requests.user) != username:
-            raise PermissionDenied("Permission Denied")
+    def get(self, request, username):
+        try:
+            profile_data = get_profile_data(username)
 
-        user_changed = False
-        if requests.method == "POST" and "change_profile" in requests.POST:
-            profile_data.first_name = requests.POST['first_name']
-            profile_data.last_name = requests.POST['last_name']
-            profile_data.email = requests.POST['email']
-            profile_data.save()
+            try:
+                profile_form = ProfileForm(initial={
+                    "first_name": profile_data.first_name,
+                    "last_name": profile_data.last_name,
+                    "email": profile_data.email
+                })
+                if str(request.user) != username:
+                    raise PermissionDenied("Permission Denied")
+
+                return render(request, "user/own_profile.html", {
+                    "data": request.user,
+                    "profile_form": profile_form,
+                    "user_changed": False})
+
+            except PermissionDenied:
+                return render(request, "user/other_profile.html", {"user": request.user, "data": profile_data})
+        except User.DoesNotExist:
+            return HttpResponse("User not found")
+
+    def post(self, request, username):
+        if "change_profile" in request.POST:
+            profile_data = get_profile_data(username)
+            profile_data.first_name = request.POST['first_name']
+            profile_data.last_name = request.POST['last_name']
+            profile_data.email = request.POST['email']
 
             user_changed = True
 
-            profile_form = ProfileForm(requests.POST, initial={
+            profile_data.save()
+
+            profile_form = ProfileForm(request.POST, initial={
                 "first_name": profile_data.first_name,
                 "last_name": profile_data.last_name,
                 "email": profile_data.email
             })
 
-        return render(requests, "user/own_profile.html", {
-            "data": requests.user,
-            "profile_form": profile_form,
-            "user_changed": user_changed})
-
-    except PermissionDenied:
-        return render(requests, "user/other_profile.html", {"user": requests.user, "data": profile_data})
+            return render(request, "user/own_profile.html", {
+                "data": profile_data,
+                "profile_form": profile_form,
+                "user_changed": user_changed})
 
 
-def change_password(request, username):
-    if request.method == 'POST' and "save_password" in request.POST:
-        form = PasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)  # Important!
-            # messages.success(request, 'Your password was!')
-            return redirect("logout")
-        # else:
-        #     messages.error(request, 'Please correct the error below.')
-    else:
-        form = PasswordChangeForm(request.user)
+@method_decorator(login_required, name="dispatch")
+class ChangePassword(PasswordChangeView):
+    template_name = "user/change_password.html"
+    username = None
 
-    return render(request, "user/change_password.html", {"user": request.user, 'form': form})
+    def get_object(self):
+        self.username = str(self.request.user)
+        return super().get_object()
 
 
-class LogInUser(LoginView):
+@method_decorator(login_required, name="dispatch")
+class PasswordChangeDone(View):
+    def get(self, request):
+        return redirect(reverse_lazy("user_profile", kwargs={"username": request.user}))
+
+
+class LoginUser(LoginView):
     next_page = '/'
-    form_class = UserLogInForm
-    template_name = "logIn/logIn.html"
+    form_class = UserLoginForm
+    template_name = "login/login.html"
 
 
 class LogoutUser(LogoutView):
-    # form_class = UserLogoutForm
-    template_name = "logout/logout.html"
+    next_page = '/login'
+    template_name = "login/login.html"

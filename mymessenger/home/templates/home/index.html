@@ -19,7 +19,11 @@
 {% endblock %}
 
 {% block form %}
-    <form action='{% url "create-chat" %}' target="_blank">
+    <form action='{% url "create_chat" %}' target="_blank">
        <button>Create a new chat</button>
+    </form>
+
+    <form action='{% url "create_dialog" %}' target="_blank">
+       <button>Create a new dialog</button>
     </form>
 {% endblock form %}

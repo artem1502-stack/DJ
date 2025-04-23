@@ -14,11 +14,14 @@ class Chat(models.Model):
         'Тип',
         max_length=1,
         choices=CHAT_TYPE_CHOICES,
-        default=DIALOG
+        default=CHAT
         )
-    name = models.CharField('Имя', max_length=80)
-    members = models.ManyToManyField(User, verbose_name="Участник")
-    # chat_id = models.AutoField(unique=True, editable=False, primary_key=True)
+
+    name = models.CharField('name', max_length=80)
+    members = models.ManyToManyField(User, verbose_name="Choose chat members")
+
+    def get_absolute_url(self):
+        return f"/chat/{self.id}"
 
     def __str__(self):
         m = User.objects.filter(chat__id=self.id)
@@ -28,10 +31,6 @@ class Chat(models.Model):
         except Message.DoesNotExist:
             messages = []
         return s+"\n".join(messages)
-
-    # @models.permalink
-    def get_absolute_url(self):
-        return f"/chat/{self.id}"
 
 
 class Message(models.Model):

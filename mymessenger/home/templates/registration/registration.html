@@ -20,7 +20,7 @@
 {% block form %}
     {% if not user.is_authenticated %}
         <form method="POST">
-            {{user_registration_form.as_p}}*
+            {{user_registration_form.as_p}}
             {% csrf_token %}
             <input type="submit" value="send">
         </form>

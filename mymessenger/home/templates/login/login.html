@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Log in
+{% endblock title %}
+
+{% block head %}
+    Yellow
+{% endblock head %}
+
+{% block form %}
+
+    <form method="POST">
+        {% csrf_token %}
+
+        {% if form.errors %}
+            <p>Your username and password didn't match. Please try again.</p>
+        {% endif %}
+
+        <h1>Log In</h1>
+        {% for f in form %}
+            <p><label class="form-label" for="{{ f.id_for_label }}">{{f.label}}: </label>{{ f }}</p>
+        {% endfor %}
+        <input type="submit" name="login_user" value="login" />
+
+    </form>
+{% endblock %}
