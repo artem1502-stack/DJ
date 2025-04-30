@@ -2,8 +2,7 @@ from django.http import HttpResponse
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
-from django.db import models
-from .models import Chat
+from .models import Multichat, Dialog
 
 
 class ChatForm(forms.ModelForm):
@@ -14,22 +13,18 @@ class ChatForm(forms.ModelForm):
         self.user = user
 
     class Meta:
-        model = Chat
+        model = Multichat
         fields = ("name", "members")
 
     def clean_members(self):
         c_d = self.cleaned_data
         if self.user not in c_d["members"]:
-            # self.data = self.data.copy()
-            # self.data['members'] += str(self.user)
             self.fields['members'].queryset |= User.objects.filter(username=self.user)
         return c_d["members"]
 
 
-class DialogForm(forms.Form):  # prev: forms.ModelForm // BaseModelFormSet
-
-    #  in order to use ModelChoiceField, the original field in the model has to have be ForeignKey, NOT ManyToMany
-    members = forms.ModelChoiceField(
+class DialogForm(forms.ModelForm):
+    member1 = forms.ModelChoiceField(
         queryset=(User.objects.all()),
         empty_label="Choose a user",
         widget=forms.Select,
@@ -38,18 +33,16 @@ class DialogForm(forms.Form):  # prev: forms.ModelForm // BaseModelFormSet
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['members'] = forms.ModelChoiceField(widget=forms.Select, empty_label="Choose a user",
-                                                                queryset=User.objects.all())
+        self.fields['member1'] = forms.ModelChoiceField(widget=forms.Select, empty_label="Choose a user",
+                                                                             queryset=User.objects.all())
 
         if user is not None:
-            self.fields['members'].queryset = User.objects.exclude(username=user)
-
-    # def clean_type(self):
-    #     ...
+            self.fields['member1'].queryset = User.objects.exclude(username=user)
+            # self.fields['member2'].queryset = User.objects.filter(username=user)
 
     class Meta:
-        model = Chat
-        fields = ("members",)
+        model = Dialog
+        fields = ("member1",)
 
 
 class MessageForm(forms.Form):

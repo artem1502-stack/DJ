@@ -10,7 +10,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.utils import timezone
 from django.forms import modelformset_factory
-from .models import Message, Chat
+from .models import Message, Multichat, Dialog
 from .forms import MessageForm, UserRegistrationForm, UserLoginForm, ChatForm, DialogForm, ProfileForm
 import datetime
 
@@ -20,22 +20,22 @@ def get_messages2():
     return messages
 
 
-def get_chats(user):
-    chats = Chat.objects.filter(members=user)
-
-    chat_data = []
-    for chat in chats:
-
-        cur_members = (chat.members.all())
-        if chat.type == "D":
-            name = str(chat.members.all()[0])
-        else:
-            name = chat.name
-
-        cur_chat = f"{chat.id}) Name: {name} ({chat.type}) \ \ \n Users: {list(map(str, cur_members))}"
-        chat_data.append(cur_chat)
-
-    return chat_data
+# def get_chat_dialogs(user):
+#     chats = Multichat.objects.filter(members=user)
+#
+#     chat_data = []
+#     for chat in chats:
+#
+#         cur_members = (chat.members.all())
+#         if chat.type == "D":
+#             name = str(chat.members.all()[0])
+#         else:
+#             name = chat.name
+#
+#         cur_chat = f"{chat.id}) Name: {name} ({chat.type}) \ \ \n Users: {list(map(str, cur_members))}"
+#         chat_data.append(cur_chat)
+#
+#     return chat_data
 
 
 class SaveInputMessage(View):
@@ -75,10 +75,14 @@ class SaveInputMessage(View):
 @method_decorator(login_required, name="dispatch")
 class Index(View):
     def get(self, request):
-        chats = Chat.objects.filter(members=request.user)
+        chats = Multichat.objects.filter(members=request.user)
+        # dialogs = Dialog.objects.filter(member2=request.user)
+        dialogs2 = Dialog.objects.filter(member1=request.user)
 
         return render(request, 'home/index.html', {
             'chats': chats,
+            # 'dialogs': dialogs,
+            'dialogs2': dialogs2,
             'user': request.user
         })
 
@@ -109,8 +113,11 @@ class CreateChatOrDialog(View):
         if "type_chosen" in request.POST:
             chat_form = form_template(request.POST, request.FILES, user=request.user)
             if chat_form.is_valid():
-                new_chat = chat_form.save()  # then add current user to queryset (members) probably through cleaned_data
-                new_chat.members.add(request.user)
+                new_chat = chat_form.save()
+                if new_chat.type == "C":
+                    new_chat.members.add(request.user)
+                else:
+                    new_chat.member2 = request.user
                 new_chat.save()
                 return redirect(new_chat)
         else:
@@ -138,11 +145,14 @@ def create_dialog(request):
     return c_or_d.post(request=request, form_template=DialogForm)
 
 
-def get_messages_in_chat(chat_id):
+def get_messages_in_chat(m_id, t):
     try:
-        messages = Message.objects.filter(chat_id=chat_id)
+        if t == "dialog_id":
+            messages = Message.objects.filter(dialog_id=m_id)
+        else:
+            messages = Message.objects.filter(chat_id=m_id)
     except Message.DoesNotExist:
-        messages = "Your chat is empty :("
+        messages = "No messages yet ..."
     return messages
 
 
@@ -150,7 +160,7 @@ def get_messages_in_chat(chat_id):
 @permission_required("home.view_chat", raise_exception=True)
 def chat(requests, id):
     try:
-        cur_chat = Chat.objects.get(id=id)
+        cur_chat = Multichat.objects.get(id=id)
         if requests.user not in cur_chat.members.all():
             raise PermissionDenied("Permission Denied")
         if requests.method == "POST" and "send_message" in requests.POST:
@@ -161,7 +171,7 @@ def chat(requests, id):
                 message.save()
             except Message.DoesNotExist:
                 ...
-        chat_messages = get_messages_in_chat(id)
+        chat_messages = get_messages_in_chat(id, t="dialog_id")
         for chat_message in chat_messages:
             if chat_message.sender != requests.user and not chat_message.is_read:
                 chat_message.is_read = True
@@ -170,8 +180,38 @@ def chat(requests, id):
         return render(requests, "chat/chat.html",
                       {'chat': cur_chat, 'chat_messages': chat_messages,
                        'user': requests.user, 'message_form': message_form})
-    except Chat.DoesNotExist:
+    except Multichat.DoesNotExist:
         return HttpResponse("Chat not found")
+    except PermissionDenied:
+        return redirect("/")
+
+
+@login_required(login_url="/login")
+@permission_required("home.view_dialog", raise_exception=True)
+def dialog(requests, id):
+    try:
+        cur_dialog = Dialog.objects.get(id=id)
+        if requests.user != cur_dialog.member1:
+            raise PermissionDenied("Permission Denied")
+        if requests.method == "POST" and "send_message" in requests.POST:
+            try:
+                text = requests.POST.get("text")
+                message = Message(content=text, pud_date=timezone.now(), is_read=False, sender=requests.user,
+                                  chat=cur_dialog)
+                message.save()
+            except Message.DoesNotExist:
+                ...
+        chat_messages = get_messages_in_chat(id)
+        for chat_message in chat_messages:
+            if chat_message.sender != requests.user and not chat_message.is_read:
+                chat_message.is_read = True
+                chat_message.save()
+        message_form = MessageForm()
+        return render(requests, "chat/dialog.html",
+                      {'chat': cur_dialog, 'chat_messages': chat_messages,
+                       'user': requests.user, 'message_form': message_form})
+    except Multichat.DoesNotExist:
+        return HttpResponse("Dialog not found")
     except PermissionDenied:
         return redirect("/")
 
