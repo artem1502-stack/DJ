@@ -9,11 +9,6 @@
     <h3>Your chats:</h3>
     {% for chat in chats %}
         <h4><a href="chat/{{chat.id}}">Name: {{chat.name}} ({{chat.type}})</a></h4>
-        {% for member in chat.members.all %}
-            {% if member != user %}
-                <a href="user/{{member}}"><h4>{{member}}</h4></a>
-            {% endif %}
-        {% endfor %}
         <h5>-----------------------------------------------</h5>
     {% endfor %}
 {% endblock %}

@@ -6,10 +6,18 @@ from polymorphic.models import PolymorphicModel
 
 
 class Chat(PolymorphicModel):
+
+    def __str__(self):
+        try:
+            messages = list(map(str, Message.objects.filter(connected_chat__id=self.id)))
+        except Message.DoesNotExist:
+            messages = []
+        return s+"\n".join(messages)
+
     class Meta:
         ...
 
-
+#ModelA.objects.filter(  Q(ModelB___field2 = 'B2') | Q(ModelC___field3 = 'C3')  )
 class Multichat(Chat):
     type = "C"
     name = models.CharField('name', max_length=80)
@@ -19,38 +27,30 @@ class Multichat(Chat):
         return f"/chat/{self.id}"
 
     def __str__(self):
-        m = User.objects.filter(multichat__id=self.id)
+        m = User.objects.filter(connected_chat__id=self.id)
         s = f"{self.type} \n {m} \n"
-        try:
-            messages = list(map(str, Message.objects.filter(multichat=self.id)))
-        except Message.DoesNotExist:
-            messages = []
-        return s+"\n".join(messages)
+        return s + self.super().__str__()
 
 
 class Dialog(Chat):
     type = "D"
     name = ""
     member1 = models.ForeignKey(User, verbose_name="Choose a user", on_delete=models.CASCADE, related_name="companion")
-    member2 = models.ForeignKey(User, verbose_name="YOU", on_delete=models.CASCADE, related_name="you")
+    member2 = models.ForeignKey(User, verbose_name="YOU", on_delete=models.CASCADE, related_name="you", blank=True, null=True)
     # pk = models.CompositePrimaryKey("member1_id", "member2_id")
     # id = models.AutoField(primary_key=True)
 
     def get_absolute_url(self):
         return f"/dialog/{self.id}"
 
-    def clean(self):
-        if self.member1 == self.member2 or self.member1 is None or self.member2 is None:
-            raise ValidationError("member1 == member2 or one of the values is None")
+#    def clean(self):
+ #       if self.member1 == self.member2 or self.member1 is None or self.member2 is None:
+  #          raise ValidationError("member1 == member2 or one of the values is None")
 
     def __str__(self):
-        m = User.objects.filter(dialog__id=self.id)
+        m = User.objects.filter(connected_chat__id=self.id)
         s = f"{self.type} \n {m} \n {self.member2} AND {self.member1}"
-        try:
-            messages = list(map(str, Message.objects.filter(dialog=self.id)))
-        except Message.DoesNotExist:
-            messages = []
-        return s+"\n".join(messages)
+        return s + self.super().__str__()
 
 
 class Message(models.Model):
@@ -58,7 +58,7 @@ class Message(models.Model):
     pud_date = models.DateTimeField('Date', default=timezone.now)
     is_read = models.BooleanField('Seen', default=False)
     message_id = models.AutoField(unique=True, editable=False, primary_key=True)
-    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    connected_chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
     # dialog = models.ForeignKey(Dialog, on_delete=models.CASCADE, blank=True, null=True, default=None)
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
 
