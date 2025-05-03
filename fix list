@@ -1,13 +1,8 @@
 1) Hand out permissions
-2) Work out the member relationship in our Chat/Dialog forms/models
-+ Rewrite its type and path
-+ (maybe) add separate templates
 3) Go into the user's account after registration
 4) registration function -> Registration class
 5) Username already used message
-6) Displayed name has to change (dialog) depending on the user
 7) Change up login and logout (check if user in db etc.)
 8) Add back to main button
-9) Message has to be related to multiple classes!!! (can it be connected to chat?) A cannot change Foreignkey class
-(cause it depends on the variable)
 11) arguments in Chat abstract class? (DRY)
+12) scroll automatically down when sending new messages

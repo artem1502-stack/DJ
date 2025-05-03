@@ -12,7 +12,7 @@ class Chat(PolymorphicModel):
             messages = list(map(str, Message.objects.filter(connected_chat__id=self.id)))
         except Message.DoesNotExist:
             messages = []
-        return s+"\n".join(messages)
+        return "\n".join(messages)
 
     class Meta:
         ...

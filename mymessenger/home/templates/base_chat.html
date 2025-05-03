@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Chat/Dialog
+{% endblock title %}
+
+{% block desc %}
+
+{% endblock desc %}
+
+{% block data %}
+    <h4>---------------------------------------</h4>
+    {% for chat_message in chat_messages %}
+        <h3>{{chat_message}}</h3>
+    {% endfor %}
+    <h4>---------------------------------------</h4>
+    {% csrf_token %}
+{% endblock data %}
+
+{% block form %}
+    <form method="POST">
+        <p>Enter message: {{message_form.text}}</p>
+        {% csrf_token %}
+        <input type="submit" value="send" name="send_message">
+    </form>
+{% endblock form %}

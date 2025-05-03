@@ -72,7 +72,7 @@ class SaveInputMessage(View):
             message = Message(content=text, pud_date=date_time, is_read=boolean_field)
             message.save()
 
-#ModelA.objects.filter(  Q(ModelB___field2 = 'B2') | Q(ModelC___field3 = 'C3')  )
+
 @method_decorator(login_required, name="dispatch")
 class Index(View):
     def get(self, request):
@@ -109,7 +109,7 @@ class CreateChatOrDialog(View):
     def post(self, request, form_template):
         if "type_chosen" in request.POST:
             chat_form = form_template(request.POST, request.FILES, user=request.user)
-            
+
             if chat_form.is_valid():
                 new_chat = chat_form.save()
                 if new_chat.type == "C":
@@ -162,7 +162,7 @@ def chat(requests, id):
             try:
                 text = requests.POST.get("text")
                 message = Message(content=text, pud_date=timezone.now(), is_read=False, sender=requests.user,
-                                  chat=cur_chat)
+                                  connected_chat=cur_chat)
                 message.save()
             except Message.DoesNotExist:
                 ...
@@ -180,19 +180,19 @@ def chat(requests, id):
     except PermissionDenied:
         return redirect("/")
 
-#@permission_required("home.view_dialog", raise_exception=True)
 
 @login_required(login_url="/login")
+@permission_required("home.view_dialog", raise_exception=True)
 def dialog(requests, id):
     try:
         cur_dialog = Dialog.objects.get(id=id)
-        if requests.user != cur_dialog.member1 and request.user != cur_dialog.member2:
+        if requests.user != cur_dialog.member1 and requests.user != cur_dialog.member2:
             raise PermissionDenied("Permission Denied")
         if requests.method == "POST" and "send_message" in requests.POST:
             try:
                 text = requests.POST.get("text")
                 message = Message(content=text, pud_date=timezone.now(), is_read=False, sender=requests.user,
-                                  chat=cur_dialog)
+                                  connected_chat=cur_dialog)
                 message.save()
             except Message.DoesNotExist:
                 ...
@@ -202,8 +202,12 @@ def dialog(requests, id):
                 chat_message.is_read = True
                 chat_message.save()
         message_form = MessageForm()
+        if requests.user == cur_dialog.member1:
+            companion = cur_dialog.member2
+        else:
+            companion = cur_dialog.member1
         return render(requests, "chat/dialog.html",
-                      {'chat': cur_dialog, 'chat_messages': chat_messages,
+                      {'chat': cur_dialog, 'chat_messages': chat_messages, 'companion': companion,
                        'user': requests.user, 'message_form': message_form})
     except Dialog.DoesNotExist:
         return HttpResponse("Dialog not found")

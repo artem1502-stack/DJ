@@ -8,7 +8,15 @@
 {% block data %}
     <h3>Your chats:</h3>
     {% for chat in chats %}
-        <h4><a href="chat/{{chat.id}}">Name: {{chat.name}} ({{chat.type}})</a></h4>
+        {% if chat.type == "C" %}
+            <h4><a href="chat/{{chat.id}}">{{chat.name}} ({{chat.type}})</a></h4>
+        {% else %}
+            {% if user == chat.member1 %}
+                <h4><a href="dialog/{{chat.id}}">{{chat.member2}} ({{chat.type}})</a></h4>
+            {% else %}
+                <h4><a href="dialog/{{chat.id}}">{{chat.member1}} ({{chat.type}})</a></h4>
+            {% endif %}
+        {% endif %}
         <h5>-----------------------------------------------</h5>
     {% endfor %}
 {% endblock %}

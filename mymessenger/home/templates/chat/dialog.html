@@ -1,25 +1,9 @@
-{% extends "base.html" %}
+{% extends "base_chat.html" %}
 
 {% block title %}
-    Chat
+    Dialog ({{companion}})
 {% endblock title %}
 
-{% block data %}
-    <p>{{chat.id}}</p>
-    <h5>Name: {{cur_dialog.name}}</h5>
-    <a href="user/{{cur_dialog.member1}}"><h4>{{cur_dialog.member1}}</h4></a>
-    <h4>---------------------------------------</h4>
-    {% for chat_message in chat_messages %}
-        <h3>{{chat_message}}</h3>
-    {% endfor %}
-    <h4>---------------------------------------</h4>
-    {% csrf_token %}
-{% endblock data %}
-
-{% block form %}
-    <form method="POST">
-        <p>Enter message: {{message_form.text}}</p>
-        {% csrf_token %}
-        <input type="submit" value="send" name="send_message">
-    </form>
-{% endblock %}
+{% block desc %}
+    <a href="user/{{companion}}"><h4>{{companion}}</h4></a>
+{% endblock desc %}
