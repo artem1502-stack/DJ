@@ -2,7 +2,9 @@
 3) Go into the user's account after registration
 4) registration function -> Registration class
 5) Username already used message
-7) Change up login and logout (check if user in db etc.)
 8) Add back to main button
-11) arguments in Chat abstract class? (DRY)
-12) scroll automatically down when sending new messages
+13) No more than 1 D with a certain user?
+14) Add hidden_user (limit who can visit his page) + field in class "User"
+15) Delete some users
+Destroy chats/dialogs w/ dead users
+16) THE MESSAGES HAVE THE ABILITY TO CLONE THEMSELVES

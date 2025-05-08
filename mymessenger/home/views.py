@@ -2,16 +2,14 @@ from django.contrib.auth.models import User, Permission
 from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeView
 from django.contrib.auth.decorators import login_required, permission_required
 from django.views import View
-from django.views.generic.detail import DetailView
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.shortcuts import render, redirect
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.utils import timezone
-from django.forms import modelformset_factory
 from django.db.models import Q
-from .models import Message, Multichat, Dialog, Chat
+from .models import Message, Dialog, Chat, DELETED_USER
 from .forms import MessageForm, UserRegistrationForm, UserLoginForm, ChatForm, DialogForm, ProfileForm
 import datetime
 
@@ -19,24 +17,6 @@ import datetime
 def get_messages2():
     messages = Message.objects.all()
     return messages
-
-
-# def get_chat_dialogs(user):
-#     chats = Multichat.objects.filter(members=user)
-#
-#     chat_data = []
-#     for chat in chats:
-#
-#         cur_members = (chat.members.all())
-#         if chat.type == "D":
-#             name = str(chat.members.all()[0])
-#         else:
-#             name = chat.name
-#
-#         cur_chat = f"{chat.id}) Name: {name} ({chat.type}) \ \ \n Users: {list(map(str, cur_members))}"
-#         chat_data.append(cur_chat)
-#
-#     return chat_data
 
 
 class SaveInputMessage(View):
@@ -106,7 +86,14 @@ def registration(requests):
 
 
 class CreateChatOrDialog(View):
-    def post(self, request, form_template):
+
+    def get_form_template(self, request):
+        if request.resolver_match.view_name == "create_chat":
+            return ChatForm
+        return DialogForm
+
+    def post(self, request):
+        form_template = self.get_form_template(request)
         if "type_chosen" in request.POST:
             chat_form = form_template(request.POST, request.FILES, user=request.user)
 
@@ -118,29 +105,16 @@ class CreateChatOrDialog(View):
                     new_chat.member2 = request.user
                 new_chat.save()
                 return redirect(new_chat)
-        else:
-            chat_form = form_template(user=request.user)
+            return render(request, "chat/create_chat.html", {
+                'chat_form': chat_form, 'user': request.user
+            })
+
+    def get(self, request):
+        form_template = self.get_form_template(request)
+        chat_form = form_template(user=request.user)
         return render(request, "chat/create_chat.html", {
             'chat_form': chat_form, 'user': request.user
         })
-
-
-class CreateChat(View):
-
-    def get_post(self, request):
-        c_or_d = CreateChatOrDialog()
-        return c_or_d.post(request=request, form_template=ChatForm)
-
-    def get(self, request):
-        return self.get_post(request)
-
-    def post(self, request):
-        return self.get_post(request)
-
-
-def create_dialog(request):
-    c_or_d = CreateChatOrDialog()
-    return c_or_d.post(request=request, form_template=DialogForm)
 
 
 def get_messages_in_chat(m_id):
@@ -151,69 +125,87 @@ def get_messages_in_chat(m_id):
     return messages
 
 
-@login_required(login_url="/login")
-@permission_required("home.view_chat", raise_exception=True)
-def chat(requests, id):
-    try:
-        cur_chat = Multichat.objects.get(id=id)
-        if requests.user not in cur_chat.members.all():
-            raise PermissionDenied("Permission Denied")
-        if requests.method == "POST" and "send_message" in requests.POST:
-            try:
-                text = requests.POST.get("text")
-                message = Message(content=text, pud_date=timezone.now(), is_read=False, sender=requests.user,
-                                  connected_chat=cur_chat)
-                message.save()
-            except Message.DoesNotExist:
-                ...
+@method_decorator(permission_required("home.view_dialog", raise_exception=True), name="dispatch")
+@method_decorator(permission_required("home.view_chat", raise_exception=True), name="dispatch")
+@method_decorator(login_required, name="dispatch")
+class ChatDialog(View):
+
+    def get_messages_and_companion(self, request, id, path_name, cur_chat):
         chat_messages = get_messages_in_chat(id)
         for chat_message in chat_messages:
-            if chat_message.sender != requests.user and not chat_message.is_read:
+            if chat_message.sender != request.user and not chat_message.is_read:
                 chat_message.is_read = True
                 chat_message.save()
         message_form = MessageForm()
-        return render(requests, "chat/chat.html",
-                      {'chat': cur_chat, 'chat_messages': chat_messages,
-                       'user': requests.user, 'message_form': message_form})
-    except Multichat.DoesNotExist:
-        return HttpResponse("Chat not found")
-    except PermissionDenied:
-        return redirect("/")
-
-
-@login_required(login_url="/login")
-@permission_required("home.view_dialog", raise_exception=True)
-def dialog(requests, id):
-    try:
-        cur_dialog = Dialog.objects.get(id=id)
-        if requests.user != cur_dialog.member1 and requests.user != cur_dialog.member2:
-            raise PermissionDenied("Permission Denied")
-        if requests.method == "POST" and "send_message" in requests.POST:
-            try:
-                text = requests.POST.get("text")
-                message = Message(content=text, pud_date=timezone.now(), is_read=False, sender=requests.user,
-                                  connected_chat=cur_dialog)
-                message.save()
-            except Message.DoesNotExist:
-                ...
-        chat_messages = get_messages_in_chat(id)
-        for chat_message in chat_messages:
-            if chat_message.sender != requests.user and not chat_message.is_read:
-                chat_message.is_read = True
-                chat_message.save()
-        message_form = MessageForm()
-        if requests.user == cur_dialog.member1:
-            companion = cur_dialog.member2
+        if path_name == "dialog":
+            if request.user == cur_chat.member1:
+                companion = cur_chat.member2
+            else:
+                companion = cur_chat.member1
         else:
-            companion = cur_dialog.member1
-        return render(requests, "chat/dialog.html",
-                      {'chat': cur_dialog, 'chat_messages': chat_messages, 'companion': companion,
-                       'user': requests.user, 'message_form': message_form})
-    except Dialog.DoesNotExist:
-        return HttpResponse("Dialog not found")
-    except PermissionDenied:
-        print("Permission Denied")
-        return redirect("/")
+            companion = "-"
+        return chat_messages, message_form, companion
+
+    def determine_connected_chat(self, request):
+        path_name = request.resolver_match.view_name
+        if path_name == "chat":
+            return Chat, path_name
+        return Dialog, path_name
+
+    def only_alive(self, chat, current_user, chat_name):
+        if chat_name == "chat":
+            others = chat.members.all()
+            if len(others) == 1:
+                return True
+            return False
+        if DELETED_USER == str(chat.member1) or DELETED_USER == str(chat.member2):
+            return True
+        return False
+        # others = connected_chat.objects.get_members()
+        # return HttpResponse(others)
+        # print(others)
+        # # print(list(map(lambda x: x.username, list(others))).count(DELETED_USER), len(list(others)))
+        # if list(map(lambda x: x.username, list(others))).count(DELETED_USER) == len(list(others))+1:
+        #     print(True)
+        #     return True
+        # print(False)
+        # return False
+
+    def get(self, request, id):
+        chat_dialog, path_name = self.determine_connected_chat(request)
+        try:
+            cur_chat = chat_dialog.objects.get(id=id)
+            if (path_name == "dialog" and request.user != cur_chat.member1 and request.user != cur_chat.member2) or \
+                    (path_name == "chat" and request.user not in cur_chat.members.all()):
+                raise PermissionDenied("Permission Denied")
+
+            chat_messages, message_form, companion = self.get_messages_and_companion(request, id, path_name, cur_chat)
+            only_alive = self.only_alive(cur_chat, request.user, path_name)
+
+            return render(request, f"chat/{path_name}.html",
+                          {'chat': cur_chat, 'chat_messages': chat_messages, 'companion': companion,
+                           'only_alive': only_alive, 'user': request.user, 'message_form': message_form})
+
+        except chat_dialog.DoesNotExist:
+            return HttpResponse("Chat/Dialog not found")
+        except PermissionDenied:
+            print("Permission Denied")
+            return redirect("/")
+
+    def post(self, request, id):
+        chat_dialog, path_name = self.determine_connected_chat(request)
+        cur_chat = chat_dialog.objects.get(id=id)
+        if "send_message" in request.POST:
+            text = request.POST.get("text")
+            message = Message(content=text, pud_date=timezone.now(), is_read=False, sender=request.user,
+                              connected_chat=cur_chat)
+            message.save()
+
+        chat_messages, message_form, companion = self.get_messages_and_companion(request, id, path_name, cur_chat)
+
+        return render(request, f"chat/{path_name}.html",
+                      {'chat': cur_chat, 'chat_messages': chat_messages, 'companion':companion,
+                       'user': request.user, 'message_form': message_form})
 
 
 def get_profile_data(username):
@@ -228,6 +220,8 @@ class UserProfile(View):
     def get(self, request, username):
         try:
             profile_data = get_profile_data(username)
+            if username == DELETED_USER:
+                return HttpResponse("This has user deleted their account")
 
             try:
                 profile_form = ProfileForm(initial={

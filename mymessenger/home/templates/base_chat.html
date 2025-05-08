@@ -18,9 +18,11 @@
 {% endblock data %}
 
 {% block form %}
-    <form method="POST">
-        <p>Enter message: {{message_form.text}}</p>
-        {% csrf_token %}
-        <input type="submit" value="send" name="send_message">
-    </form>
+    {% if not only_alive %}
+        <form method="POST">
+            <p>Enter message: {{message_form.text}}</p>
+            {% csrf_token %}
+            <input type="submit" value="send" name="send_message">
+        </form>
+    {% endif %}
 {% endblock form %}

@@ -2,14 +2,14 @@ from django.http import HttpResponse
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Multichat, Dialog
+from .models import Multichat, Dialog, DELETED_USER
 
 
 class ChatForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         if user is not None:
-            self.fields['members'].queryset = User.objects.exclude(username=user)
+            self.fields['members'].queryset = User.objects.exclude(username=user).exclude(username=DELETED_USER)
         self.user = user
 
     class Meta:
@@ -37,7 +37,7 @@ class DialogForm(forms.ModelForm):
                                                                              queryset=User.objects.all())
 
         if user is not None:
-            self.fields['member1'].queryset = User.objects.exclude(username=user)
+            self.fields['member1'].queryset = User.objects.exclude(username=user).exclude(username=DELETED_USER)
             # self.fields['member2'].queryset = User.objects.filter(username=user)
 
     class Meta:
