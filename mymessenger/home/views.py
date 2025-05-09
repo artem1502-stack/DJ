@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import Permission
 from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeView
 from django.contrib.auth.decorators import login_required, permission_required
 from django.views import View
@@ -9,7 +9,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
-from .models import Message, Dialog, Chat, DELETED_USER
+from .models import OurUser, Message, Dialog, Chat, DELETED_USER
 from .forms import MessageForm, UserRegistrationForm, UserLoginForm, ChatForm, DialogForm, ProfileForm
 import datetime
 
@@ -65,6 +65,7 @@ class Index(View):
 
 
 def registration(requests):
+    message = ''
     if requests.method == "POST":
         user_form = UserRegistrationForm(requests.POST)
 
@@ -75,14 +76,20 @@ def registration(requests):
             # ("can_add_chat", "Can add chat"), ("can_view_chat", "Can change chat"),
             # ("can_add_message", "Can add message"), ("can_view_message", "Can change message"),
             # ]
-            permission = Permission.objects.all()
-            new_user.user_permissions.set(permission)
+
+            permission = Permission.objects.get(
+                codename="base_permission"
+            )
+            new_user.user_permissions.add(permission)
 
             new_user.save()
+            return redirect("/")
+        else:
+            message = "Username is taken or contains incorrect characters"
     user_registration_form = UserRegistrationForm()
-    users = User.objects.all()
+    users = OurUser.objects.all()
     return render(requests, "registration/registration.html", {'user_registration_form': user_registration_form,
-                                                               'users': users})
+                                                               'users': users, 'message': message})
 
 
 class CreateChatOrDialog(View):
@@ -125,8 +132,7 @@ def get_messages_in_chat(m_id):
     return messages
 
 
-@method_decorator(permission_required("home.view_dialog", raise_exception=True), name="dispatch")
-@method_decorator(permission_required("home.view_chat", raise_exception=True), name="dispatch")
+@method_decorator(permission_required("home.base_permission", raise_exception=True), name="dispatch")
 @method_decorator(login_required, name="dispatch")
 class ChatDialog(View):
 
@@ -161,15 +167,6 @@ class ChatDialog(View):
         if DELETED_USER == str(chat.member1) or DELETED_USER == str(chat.member2):
             return True
         return False
-        # others = connected_chat.objects.get_members()
-        # return HttpResponse(others)
-        # print(others)
-        # # print(list(map(lambda x: x.username, list(others))).count(DELETED_USER), len(list(others)))
-        # if list(map(lambda x: x.username, list(others))).count(DELETED_USER) == len(list(others))+1:
-        #     print(True)
-        #     return True
-        # print(False)
-        # return False
 
     def get(self, request, id):
         chat_dialog, path_name = self.determine_connected_chat(request)
@@ -209,12 +206,12 @@ class ChatDialog(View):
 
 
 def get_profile_data(username):
-    data = User.objects.get(username=username)
+    data = OurUser.objects.get(username=username)
     return data
 
 
 @method_decorator(login_required, name="dispatch")
-@method_decorator(permission_required("auth.change_user", raise_exception=True), name="dispatch")
+@method_decorator(permission_required("home.base_permission", raise_exception=True), name="dispatch")
 class UserProfile(View):
 
     def get(self, request, username):
@@ -222,7 +219,8 @@ class UserProfile(View):
             profile_data = get_profile_data(username)
             if username == DELETED_USER:
                 return HttpResponse("This has user deleted their account")
-
+            if profile_data.hidden_user:
+                return HttpResponse("This user is hidden")
             try:
                 profile_form = ProfileForm(initial={
                     "first_name": profile_data.first_name,
@@ -239,7 +237,7 @@ class UserProfile(View):
 
             except PermissionDenied:
                 return render(request, "user/other_profile.html", {"user": request.user, "data": profile_data})
-        except User.DoesNotExist:
+        except OurUser.DoesNotExist:
             return HttpResponse("User not found")
 
     def post(self, request, username):

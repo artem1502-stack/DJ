@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from polymorphic.models import PolymorphicModel
+from django.contrib.auth.models import AbstractUser
 
 DELETED_USER = "Deleted User"
 
@@ -12,6 +13,17 @@ def get_sentinel_user():
     # user.is_active = False
     # user.save()
     return user
+
+
+class OurUser(AbstractUser):
+    hidden_user = models.BooleanField(default=False)
+    verbose_name = "user"
+
+    class Meta:
+        permissions = [
+            ("base_permission", "All basic permissions of a user"),
+            ("admin_permission", "All basic permissions of an admin")
+        ]
 
 
 class ChatManager(models.Manager):
@@ -43,16 +55,16 @@ class Chat(PolymorphicModel):
 class Multichat(Chat):
     type = "C"
     name = models.CharField('name', max_length=80)
-    members = models.ManyToManyField(User, verbose_name="Choose chat members")
+    members = models.ManyToManyField(OurUser, verbose_name="Choose chat members")
 
     def get_absolute_url(self):
         return f"/chat/{self.id}"
 
     def get_members(self):
-        return User.objects.filter(username_in=self.members)
+        return OurUser.objects.filter(username_in=self.members)
 
     def __str__(self):
-        m = User.objects.filter(id=self.id)
+        m = OurUser.objects.filter(id=self.id)
         s = f"Type: {self.type} || Name: {self.name} || \n Members: {m} \n"
         return s + "||" + super().__str__()
 
@@ -60,17 +72,17 @@ class Multichat(Chat):
 class Dialog(Chat):
     type = "D"
     name = ""
-    member1 = models.ForeignKey(User, verbose_name="Choose a user", on_delete=models.SET(get_sentinel_user),
+    member1 = models.ForeignKey(OurUser, verbose_name="Choose a user", on_delete=models.SET(get_sentinel_user),
                                 null=True, related_name="companion")
-    member2 = models.ForeignKey(User, verbose_name="YOU", on_delete=models.SET(get_sentinel_user), null=True,
+    member2 = models.ForeignKey(OurUser, verbose_name="YOU", on_delete=models.SET(get_sentinel_user), null=True,
                                 related_name="you")
 
     def get_absolute_url(self):
         return f"/dialog/{self.id}"
 
     def get_members(self):
-        m1 = User.objects.get(self.member1)
-        m2 = User.objects.get(self.member2)
+        m1 = OurUser.objects.get(self.member1)
+        m2 = OurUser.objects.get(self.member2)
         return m1 | m2
 
     def __str__(self):
@@ -84,7 +96,7 @@ class Message(models.Model):
     is_read = models.BooleanField('Seen', default=False)
     message_id = models.AutoField(unique=True, editable=False, primary_key=True)
     connected_chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
-    sender = models.ForeignKey(User, on_delete=models.SET(get_sentinel_user), null=True)
+    sender = models.ForeignKey(OurUser, on_delete=models.SET(get_sentinel_user), null=True)
 
     def __str__(self):
         if self.is_read:

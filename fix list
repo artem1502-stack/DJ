@@ -1,10 +1,10 @@
-1) Hand out permissions
+1) Hand out permissions +-
 3) Go into the user's account after registration
 4) registration function -> Registration class
 5) Username already used message
 8) Add back to main button
 13) No more than 1 D with a certain user?
-14) Add hidden_user (limit who can visit his page) + field in class "User"
-15) Delete some users
-Destroy chats/dialogs w/ dead users
-16) THE MESSAGES HAVE THE ABILITY TO CLONE THEMSELVES
+14) Add hidden_user (limit who can visit their page) + field in class "User"
++ template to hidden user (and EVERYTHING)
+15) Destroy chats/dialogs w/ dead users
+I CANNOT LOG IN MY ACCOUNT, WHICH WAS CREATED BY AN ADMIN

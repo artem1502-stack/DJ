@@ -8,6 +8,7 @@
 <h1>Registration</h1>
 
 {% block data %}
+    {{ message }}
     {% if user.is_authenticated %}
         <h3>You are already logged in (go to the logout page to log out)</h3>
     {% else %}
