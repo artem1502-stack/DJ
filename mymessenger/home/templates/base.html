@@ -33,6 +33,12 @@
     {% endif %}
 </head>
 <body>
+    {% block back_to_main %}
+        <form action='{% url "index" %}' target="_blank">
+           <button>🏠</button>
+        </form>
+    {% endblock %}
+
     {% block profile_greeting %}
 
     {% endblock profile_greeting %}
@@ -52,4 +58,5 @@
     {% block form %}
 
     {% endblock form %}
+
 </body>

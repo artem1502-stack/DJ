@@ -6,7 +6,6 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.shortcuts import render, redirect
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
 from .models import OurUser, Message, Dialog, Chat, DELETED_USER
@@ -184,7 +183,7 @@ class ChatDialog(View):
                            'only_alive': only_alive, 'user': request.user, 'message_form': message_form})
 
         except chat_dialog.DoesNotExist:
-            return HttpResponse("Chat/Dialog not found")
+            return render(request, f"chat/chat_not_found.html", {'path_name': path_name})
         except PermissionDenied:
             print("Permission Denied")
             return redirect("/")
@@ -218,9 +217,9 @@ class UserProfile(View):
         try:
             profile_data = get_profile_data(username)
             if username == DELETED_USER:
-                return HttpResponse("This has user deleted their account")
-            if profile_data.hidden_user:
-                return HttpResponse("This user is hidden")
+                return render(request, "user/user_not_found.html")
+            if profile_data.hidden_user and username != str(request.user):
+                return render(request, "user/hidden_user.html", {'username': profile_data.username})
             try:
                 profile_form = ProfileForm(initial={
                     "first_name": profile_data.first_name,
@@ -238,7 +237,7 @@ class UserProfile(View):
             except PermissionDenied:
                 return render(request, "user/other_profile.html", {"user": request.user, "data": profile_data})
         except OurUser.DoesNotExist:
-            return HttpResponse("User not found")
+            return render(request, "user/user_not_found.html")
 
     def post(self, request, username):
         if "change_profile" in request.POST:
