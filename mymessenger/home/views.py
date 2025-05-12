@@ -84,7 +84,7 @@ def registration(requests):
             new_user.save()
             return redirect("/")
         else:
-            message = "Username is taken or contains incorrect characters"
+            message = "Username is taken or it contains incorrect characters"
     user_registration_form = UserRegistrationForm()
     users = OurUser.objects.all()
     return render(requests, "registration/registration.html", {'user_registration_form': user_registration_form,
@@ -200,7 +200,7 @@ class ChatDialog(View):
         chat_messages, message_form, companion = self.get_messages_and_companion(request, id, path_name, cur_chat)
 
         return render(request, f"chat/{path_name}.html",
-                      {'chat': cur_chat, 'chat_messages': chat_messages, 'companion':companion,
+                      {'chat': cur_chat, 'chat_messages': chat_messages, 'companion': companion,
                        'user': request.user, 'message_form': message_form})
 
 
@@ -224,7 +224,8 @@ class UserProfile(View):
                 profile_form = ProfileForm(initial={
                     "first_name": profile_data.first_name,
                     "last_name": profile_data.last_name,
-                    "email": profile_data.email
+                    "email": profile_data.email,
+                    "hidden_user": profile_data.hidden_user
                 })
                 if str(request.user) != username:
                     raise PermissionDenied("Permission Denied")
@@ -245,6 +246,7 @@ class UserProfile(View):
             profile_data.first_name = request.POST['first_name']
             profile_data.last_name = request.POST['last_name']
             profile_data.email = request.POST['email']
+            profile_data.hidden_user = bool(request.POST.get('hidden_user', False))
 
             user_changed = True
 
@@ -253,7 +255,8 @@ class UserProfile(View):
             profile_form = ProfileForm(request.POST, initial={
                 "first_name": profile_data.first_name,
                 "last_name": profile_data.last_name,
-                "email": profile_data.email
+                "email": profile_data.email,
+                "hidden_user": profile_data.hidden_user
             })
 
             return render(request, "user/own_profile.html", {

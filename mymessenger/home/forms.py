@@ -1,4 +1,3 @@
-from django.http import HttpResponse
 from django import forms
 # from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
@@ -55,11 +54,12 @@ class MessageForm(forms.Form):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = OurUser
-        fields = ("first_name", "last_name", "email")
+        fields = ("first_name", "last_name", "email", "hidden_user")
         labels = {
             "first_name": "First name (username by default)",
             "last_name": "Last name (optional)",
-            "email": "Email (optional)",}
+            "email": "Email (optional)",
+            "hidden_user": "Hide profile (others can visit your profile by default)"}
 
 
 class UserRegistrationForm(forms.ModelForm):
