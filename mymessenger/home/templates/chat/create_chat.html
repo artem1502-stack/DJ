@@ -10,6 +10,7 @@
                 {{message}}
             {% endfor %}
         {% endif %}
+        <h2>{{error}}</h2>
         <form method="POST" name="create_chat">
         {% csrf_token %}
         {% if not user.is_authenticated %}

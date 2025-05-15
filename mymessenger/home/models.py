@@ -56,17 +56,18 @@ class Multichat(Chat):
     type = "C"
     name = models.CharField('name', max_length=80)
     members = models.ManyToManyField(OurUser, verbose_name="Choose chat members")
+    # ex_members = models.ManyToManyField(OurUser, blank=True)
 
     def get_absolute_url(self):
         return f"/chat/{self.id}"
 
     def get_members(self):
-        return OurUser.objects.filter(username_in=self.members)
+        return OurUser.objects.filter(username__in=self.members)
 
     def __str__(self):
-        m = OurUser.objects.filter(id=self.id)
-        s = f"Type: {self.type} || Name: {self.name} || \n Members: {m} \n"
-        return s + "||" + super().__str__()
+        m = list(map(str, self.members.all()))
+        s = f"Type: {self.type} || Name: {self.name} || \n Members: {', '.join(m)} \n"
+        return s + super().__str__()
 
 
 class Dialog(Chat):

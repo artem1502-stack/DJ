@@ -109,6 +109,13 @@ class CreateChatOrDialog(View):
                     new_chat.members.add(request.user)
                 else:
                     new_chat.member2 = request.user
+                    if Dialog.objects.filter(member1=new_chat.member1, member2=new_chat.member2).exists() \
+                            or Dialog.objects.filter(member2=new_chat.member1, member1=new_chat.member2).exists():
+                        error = "Dialog with this person already exists!"
+                        new_chat.delete()
+                        return render(request, "chat/create_chat.html", {
+                            'chat_form': chat_form, 'user': request.user, 'error': error
+                        })
                 new_chat.save()
                 return redirect(new_chat)
             return render(request, "chat/create_chat.html", {
@@ -202,6 +209,17 @@ class ChatDialog(View):
         return render(request, f"chat/{path_name}.html",
                       {'chat': cur_chat, 'chat_messages': chat_messages, 'companion': companion,
                        'user': request.user, 'message_form': message_form})
+
+
+class DeleteOrNot(View):
+    def get(self, request, id):
+        return render(request, "chat/delete_chat.html", {'id': id})
+
+
+class Delete(View):
+    def get(self, request, id):
+        cur_chat = Chat.objects.get(id=id).members.remove(request.user)
+        return redirect("/")
 
 
 def get_profile_data(username):

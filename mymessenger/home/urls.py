@@ -12,5 +12,7 @@ urlpatterns = [
     path('dialog/<int:id>', views.ChatDialog.as_view(), name="dialog"),
     path('user/<str:username>', views.UserProfile.as_view(), name="user_profile"),
     path('<str:username>/change_password', views.ChangePassword.as_view(), name="change_password"),
-    path('password_change_done', views.PasswordChangeDone.as_view(), name="password_change_done")
+    path('password_change_done', views.PasswordChangeDone.as_view(), name="password_change_done"),
+    path('delete_chat/<int:id>', views.DeleteOrNot.as_view(), name="delete_chat/<int:id>"),
+    path('deleting/<int:id>', views.Delete.as_view(), name="yes"),
 ]

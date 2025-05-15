@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Delete chat
+{% endblock title %}
+
+{% block desc %}
+<h2>Are you sure you want to leave and delete this chat?</h2>
+You will no longer be a member here, and you will NOT be able to view the messages
+<h4>This action cannot be undone!</h4>
+{% endblock desc %}
+
+{% block stay %}
+<form action='chat/{{id}}' target="_blank">
+   <button>no</button>
+</form>
+{% endblock stay %}
+
+{% block delete_forever %}
+<form action='deleting/{{id}}' target="_blank">
+   <button>yes</button>
+</form>
+{% endblock delete_forever %}

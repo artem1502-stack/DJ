@@ -11,4 +11,9 @@
     {%endfor%}
 {% endblock desc %}
 
+{% block leave_delete %}
+    <form action='/delete_chat/{{chat.id}}' target="_blank">
+       <button>Leave and delete</button>
+    </form>
+{% endblock leave_delete %}
 
