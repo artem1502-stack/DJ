@@ -75,8 +75,12 @@ class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         serializer = OurUserSerializer(data=request.data,
                                            context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
+        #print(f"SER|{serializer}")
+        #serializer.is_valid(raise_exception=True)
+
+        user = OurUser.objects.get(username=serializer.initial_data['username'])
+        #print(f"USR:{user}")
+
         token, created = Token.objects.get_or_create(user=user)
         return Response({
             'token': token.key,

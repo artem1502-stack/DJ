@@ -1,0 +1,12 @@
+admin_token: 70d6f0ac40be670cc28928135613c2c297d7a024
+
+curl -X GET http://127.0.0.1:8000/all_users -H 'Authorization: Token 70d6f0ac40be670cc28928135613c2c297d7a024'
+
+
+curl -X GET http://127.0.0.1:8000/api-token-auth/ -H 'Authorization: username user1 password 12345678'
+
+
+curl -d "username=user4&password=12345678" -X POST http://127.0.0.1:8000/api-token-auth/
+
+
+curl -d '{"username":"user1", "password":"12345678"}' -H "Content-Type: application/json" -X POST http://127.0.0.1:8000/api-token-auth/
