@@ -1,6 +1,7 @@
 from django.contrib.auth.models import Permission
 from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeView
 from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth import login
 from django.views import View
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
@@ -68,7 +69,6 @@ class Index(View):
 
 # works properly if user is registered?
 from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 
 
@@ -111,6 +111,7 @@ class AllUsers(APIView):
 from rest_framework import permissions
 from rest_framework.generics import CreateAPIView
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 
 
 class Registration(CreateAPIView):
@@ -123,8 +124,20 @@ class Registration(CreateAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            new_user = serializer.save()
+
+            permission = Permission.objects.get(
+                codename="base_permission"
+            )
+            new_user.user_permissions.add(permission)
+
+            new_user.save()
+            if new_user is not None:
+                login(request, new_user)
+                serializer.data["token"] = Token.objects.get_or_create(user=new_user)
+                print(type(serializer.data))
+                return Response\
+                    (serializer.data, status=status.HTTP_201_CREATED, template_name="registration/registration.html")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
