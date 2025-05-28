@@ -16,6 +16,6 @@ urlpatterns = [
     path('password_change_done', views.PasswordChangeDone.as_view(), name="password_change_done"),
     path('delete_chat/<int:id>', views.DeleteOrNot.as_view(), name="delete_chat"),
     path('deleting/<int:id>', views.Delete.as_view(), name="yes"),
-    path('api-token-auth/', views.CustomAuthToken.as_view(), name='api_token_auth'),
+    # path('api-token-auth/', views.CustomAuthToken.as_view(), name='api_token_auth'),
     path('all_users', views.AllUsers.as_view(), name="all_users")
 ]

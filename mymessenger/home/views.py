@@ -13,7 +13,7 @@ from .forms import MessageForm, UserRegistrationForm, UserLoginForm, ChatForm, D
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import authentication, permissions
-from .fields import OurUserSerializer
+from .fields import OurUserSerializer, RegistrationSerializer
 import datetime
 
 
@@ -66,52 +66,42 @@ class Index(View):
             'user': request.user
         })
 
+# works properly if user is registered?
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 
-class CustomAuthToken(ObtainAuthToken):
 
-    def post(self, request, *args, **kwargs):
-        serializer = OurUserSerializer(data=request.data,
-                                           context={'request': request})
-        #print(f"SER|{serializer}")
-        #serializer.is_valid(raise_exception=True)
-
-        user = OurUser.objects.get(username=serializer.initial_data['username'])
-        #print(f"USR:{user}")
-
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({
-            'token': token.key,
-            'user_id': user.pk,
-            'email': user.email
-        })
-
-    def get(self, request, *args, **kwargs):
-        serializer = OurUserSerializer(data=request.data,
-                                           context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({
-            'token': token.key,
-            'user_id': user.pk,
-            'email': user.email
-        })
+# class CustomAuthToken(APIView):
+#     serializer_class = OurUserSerializer
+#     model = OurUser
+#     permission_classes = [
+#         permissions.AllowAny
+#     ]
+#
+#     def post(self, request, *args, **kwargs):
+#         serializer = self.serializer_class(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AllUsers(APIView):
     # authentication_classes = [authentication.TokenAuthentication]
     permission_classes = [permissions.IsAdminUser]
 
+    def __init__(self):
+        super().__init__()
+        self.serializer_class = OurUserSerializer
+
     def get(self, request):
         queryset = OurUser.objects.all()
-        serializer = OurUserSerializer(queryset, many=True)
+        serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = OurUserSerializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=201)
@@ -124,7 +114,7 @@ from rest_framework import status
 
 
 class Registration(CreateAPIView):
-    serializer_class = OurUserSerializer
+    serializer_class = RegistrationSerializer
     model = OurUser
     permission_classes = [
         permissions.AllowAny
@@ -136,32 +126,6 @@ class Registration(CreateAPIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     form_class = UserRegistrationForm
-#     template_name = "registration/registration.html"
-#     message = ""
-#
-#     def get(self, request):
-#         user_form = self.form_class(request.POST)
-#         return render(request, self.template_name, {"user_registration_form": user_form, "message": self.message})
-#
-#     def post(self, request):
-#         user_form = self.form_class(request.POST)
-#
-#         if user_form.is_valid():
-#             new_user = user_form.save()
-#             new_user.set_password(user_form.cleaned_data["password"])
-#
-#             permission = Permission.objects.get(
-#                 codename="base_permission"
-#             )
-#             new_user.user_permissions.add(permission)
-#
-#             new_user.save()
-#             return redirect("/")
-#         else:
-#             self.message = "Username is taken or it contains incorrect characters"
-#         return render(request, self.template_name, {"user_registration_form": user_form, "message": self.message})
 
 
 class CreateChatOrDialog(View):
