@@ -18,4 +18,4 @@ curl.exe "-X", "GET", "http://127.0.0.1:8000/all_users", "-H", "Authorization: T
 ___
 curl.exe "-d", "POST", "http://127.0.0.1:8000/registration/", '{"username":"user124", "password":"someotherpassword", "confirm_password": "someotherpassword"}', "-H", "Content-Type: application/json", "-X"
 
-curl.exe "-X", "POST", "http://127.0.0.1:8000/registration", "-d", "username=user1234", "-d", "email=", "-d", "password=someotherpassword", "-d", "confirm_password=someotherpassword" > rest.html
+curl.exe "-X", "POST", "http://127.0.0.1:8000/registration", "-d", "username=u122", "-d", "email=", "-d", "password=someotherpassword", "-d", "confirm_password=someotherpassword" > rest.html

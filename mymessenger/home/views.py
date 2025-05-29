@@ -132,12 +132,13 @@ class Registration(CreateAPIView):
             new_user.user_permissions.add(permission)
 
             new_user.save()
+            data = dict(serializer.data)
             if new_user is not None:
                 login(request, new_user)
-                serializer.data["token"] = Token.objects.get_or_create(user=new_user)
-                print(type(serializer.data))
+                data["token"] = Token.objects.create(user=new_user).key
+                print(data)
                 return Response\
-                    (serializer.data, status=status.HTTP_201_CREATED, template_name="registration/registration.html")
+                    (data, status=status.HTTP_201_CREATED, template_name="registration/registration.html")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
