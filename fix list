@@ -1,7 +1,7 @@
-3) Go into the user's account after registration
-4) registration function -> Registration class
-+ change password form (password in logs)?
 15) Destroy chats/dialogs w/ dead users
-I CANNOT LOG IN MY ACCOUNT, WHICH WAS CREATED BY AN ADMIN
-add comments to views
+I CANNOT LOG IN MY ACCOUNT, WHICH WAS CREATED BY AN ADMIN +-
+
+add comments to views, model
 change some view classes (so they look better)
+add to admin техническую кнопку, которая занимается update-ами
+(стабилизирующий функционал)

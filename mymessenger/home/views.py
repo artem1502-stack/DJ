@@ -23,40 +23,6 @@ def get_messages2():
     return messages
 
 
-class SaveInputMessage(View):
-    def post(self, request):
-        form = MessageForm(request.POST)
-        if form.is_valid():
-            text = request.POST.get("text")
-
-            def convert_date():
-                date_field_day = int(request.POST.get("date_field_day"))
-                date_field_month = int(request.POST.get("date_field_month"))
-                date_field_year = int(request.POST.get("date_field_year"))
-
-                time_field = request.POST.get("time_field").split(":")
-                time_hours_field = int(time_field[0])
-                time_minutes_field = int(time_field[1])
-                if len(time_field) == 3:
-                    time_seconds_field = int(time_field[2])
-                else:
-                    time_seconds_field = 0
-
-                date_time = datetime.datetime(year=date_field_year,
-                                              month=date_field_month,
-                                              day=date_field_day,
-                                              hour=time_hours_field,
-                                              minute=time_minutes_field,
-                                              second=time_seconds_field)
-                return date_time
-
-            date_time = convert_date()
-            boolean_field = bool(request.POST.get("boolean_field"))
-
-            message = Message(content=text, pud_date=date_time, is_read=boolean_field)
-            message.save()
-
-
 @method_decorator(login_required, name="dispatch")
 class Index(View):
     def get(self, request):
@@ -254,6 +220,8 @@ class ChatDialog(View):
             message = Message(content=text, pud_date=timezone.now(), is_read=False, sender=request.user,
                               connected_chat=cur_chat)
             message.save()
+            cur_chat.last_message = message
+            cur_chat.save()
 
         chat_messages, message_form, companion = self.get_messages_and_companion(request, id, path_name, cur_chat)
 

@@ -37,6 +37,12 @@ class ChatManager(models.Manager):
 
 
 class Chat(PolymorphicModel):
+    last_message = models.OneToOneField(
+        "Message",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         try:
@@ -47,6 +53,9 @@ class Chat(PolymorphicModel):
 
     def get_members(self):
         pass
+
+    def update_last_message(self):
+        self.last_message = Message.objects.filter(connected_chat__id=self.id).latest("pub_date")
 
     class Meta:
         ...
