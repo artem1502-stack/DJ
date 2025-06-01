@@ -1,14 +1,18 @@
 from django.db import models
-# from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from polymorphic.models import PolymorphicModel
 from django.contrib.auth.models import AbstractUser
 
+
+# A constant value in the db, which is used to mark deleted users.
 DELETED_USER = "Deleted User"
 
 
 def get_sentinel_user():
+    """
+    Replaces users with the variable "DELETED_USER" when their accounts get deleted.
+    """
     user = get_user_model().objects.get_or_create(username=DELETED_USER)[0]
     # user.is_active = False
     # user.save()
@@ -16,6 +20,9 @@ def get_sentinel_user():
 
 
 class OurUser(AbstractUser):
+    """
+    A User class but with extra fields.
+    """
     hidden_user = models.BooleanField(default=False)
     verbose_name = "user"
 
@@ -27,6 +34,9 @@ class OurUser(AbstractUser):
 
 
 class ChatManager(models.Manager):
+    """
+    .
+    """
     def get_chat_by_member(self, member):
         chats = Chat.objects.all()
         lst = []
@@ -37,6 +47,9 @@ class ChatManager(models.Manager):
 
 
 class Chat(PolymorphicModel):
+    """
+    A polymorphic model.
+    """
     last_message = models.OneToOneField(
         "Message",
         on_delete=models.SET_NULL,
@@ -46,6 +59,7 @@ class Chat(PolymorphicModel):
 
     def __str__(self):
         try:
+            # Get messages connected to the chat by id.
             messages = list(map(str, Message.objects.filter(connected_chat__id=self.id)))
         except Message.DoesNotExist:
             messages = []
@@ -62,10 +76,13 @@ class Chat(PolymorphicModel):
 
 
 class Multichat(Chat):
+    """
+    An instance of a Chat class.
+
+    """
     type = "C"
     name = models.CharField('name', max_length=80)
     members = models.ManyToManyField(OurUser, verbose_name="Choose chat members")
-    # ex_members = models.ManyToManyField(OurUser, blank=True)
 
     def get_absolute_url(self):
         return f"/chat/{self.id}"
@@ -80,6 +97,10 @@ class Multichat(Chat):
 
 
 class Dialog(Chat):
+    """
+    An instance of a Chat class.
+
+    """
     type = "D"
     name = ""
     member1 = models.ForeignKey(OurUser, verbose_name="Choose a user", on_delete=models.SET(get_sentinel_user),
@@ -101,6 +122,9 @@ class Dialog(Chat):
 
 
 class Message(models.Model):
+    """
+    A Model "Message".
+    """
     content = models.TextField("Message")
     pud_date = models.DateTimeField('Date', default=timezone.now)
     is_read = models.BooleanField('Seen', default=False)

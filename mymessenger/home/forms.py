@@ -33,7 +33,7 @@ class DialogForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['member1'] = forms.ModelChoiceField(widget=forms.Select, empty_label="Choose a user",
-                                                                             queryset=OurUser.objects.all())
+                                                        queryset=OurUser.objects.all())
 
         if user is not None:
             self.fields['member1'].queryset = OurUser.objects.exclude(username=user).exclude(username=DELETED_USER)

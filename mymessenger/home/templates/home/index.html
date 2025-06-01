@@ -17,7 +17,11 @@
                 <h4><a href="dialog/{{chat.id}}">{{chat.member1}} ({{chat.type}})</a></h4>
             {% endif %}
         {% endif %}
-        {{chat.last_message}}
+        {% if chat.last_message == None %}
+            No messages yet
+        {% else %}
+            {{chat.last_message}}
+        {% endif %}
         <h5>-----------------------------------------------</h5>
     {% endfor %}
 {% endblock %}

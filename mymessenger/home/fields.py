@@ -1,29 +1,25 @@
 from rest_framework import serializers
 from .models import OurUser
-from django.core.exceptions import ValidationError
-from rest_framework.authtoken.models import Token
-
-
-class OurUserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = OurUser
-        fields = ("username", "password")
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
-    confirm_password = serializers.CharField(style={'input_type': 'password'}, write_only=True )
+    """
+    A serializer, used to registrate new users.
+    """
+    confirm_password = serializers.CharField(style={'input_type': 'password'}, write_only=True)
 
     class Meta:
         model = OurUser
         fields = ("id", "username", "email", "password", "confirm_password")
+        # Making password the password only .
         extra_kwargs = {
             'password': {'write_only': True}
         }
-        # fields = '__all__'
 
     def save(self, **kwargs):
+        """
+        Performs validation and (if valid) creates a new user.
+        """
         new_user = OurUser(
             username=self.validated_data['username'],
             email=self.validated_data['email']
