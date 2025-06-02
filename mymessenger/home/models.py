@@ -77,7 +77,8 @@ class Chat(PolymorphicModel):
 
 class Multichat(Chat):
     """
-    An instance of a Chat class.
+    An instance of class "Chat" (an object, which consisted of multiple users, who can send messages to each other).
+    NOTE: FOR SOME REASON I USE CHAT IN VIEWS.
 
     """
     type = "C"
@@ -98,7 +99,7 @@ class Multichat(Chat):
 
 class Dialog(Chat):
     """
-    An instance of a Chat class.
+    An instance of class "Chat" (an object, which consisted of two users, who can send messages to each other).
 
     """
     type = "D"
@@ -123,7 +124,7 @@ class Dialog(Chat):
 
 class Message(models.Model):
     """
-    A Model "Message".
+    A Model "Message" (can only exist within the framework of "Chat" instances).
     """
     content = models.TextField("Message")
     pud_date = models.DateTimeField('Date', default=timezone.now)

@@ -4,9 +4,15 @@ from django.contrib.auth.forms import AuthenticationForm
 from .models import Multichat, Dialog, DELETED_USER, OurUser
 
 
+# Class "Meta" contains fields the user can edit.
+
 class ChatForm(forms.ModelForm):
+    """
+    A form for the user to input data while creating a new chat.
+    """
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Excludes the user from the members field, so they cannot only add themselves to a chat.
         if user is not None:
             self.fields['members'].queryset = OurUser.objects.exclude(username=user).exclude(username=DELETED_USER)
         self.user = user
@@ -16,6 +22,7 @@ class ChatForm(forms.ModelForm):
         fields = ("name", "members")
 
     def clean_members(self):
+        # Adds the user back the members field.
         c_d = self.cleaned_data
         if self.user not in c_d["members"]:
             self.fields['members'].queryset |= OurUser.objects.filter(username=self.user)
@@ -23,6 +30,9 @@ class ChatForm(forms.ModelForm):
 
 
 class DialogForm(forms.ModelForm):
+    """
+    A form for the user to input data while creating a new dialog.
+    """
     member1 = forms.ModelChoiceField(
         queryset=(OurUser.objects.all()),
         empty_label="Choose a user",
@@ -45,6 +55,9 @@ class DialogForm(forms.ModelForm):
 
 
 class MessageForm(forms.Form):
+    """
+    A form for the user to input data while creating a new dialog.
+    """
     text = forms.CharField()
     date_field = forms.DateField(widget=forms.SelectDateWidget)
     time_field = forms.TimeField(widget=forms.TimeInput)
@@ -52,6 +65,9 @@ class MessageForm(forms.Form):
 
 
 class ProfileForm(forms.ModelForm):
+    """
+    A form for registration.
+    """
     class Meta:
         model = OurUser
         fields = ("first_name", "last_name", "email", "hidden_user")
@@ -63,6 +79,9 @@ class ProfileForm(forms.ModelForm):
 
 
 class UserRegistrationForm(forms.ModelForm):
+    """
+    A form for registration.
+    """
     password = forms.CharField(widget=forms.PasswordInput, label="Password")
     check_password = forms.CharField(widget=forms.PasswordInput, label="Insert password again")
 
@@ -78,6 +97,9 @@ class UserRegistrationForm(forms.ModelForm):
 
 
 class UserLoginForm(AuthenticationForm):
+    """
+    A form for login.
+    """
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput, label="Insert your password")
 

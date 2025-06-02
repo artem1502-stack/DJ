@@ -15,7 +15,6 @@ from .fields import RegistrationSerializer
 from rest_framework.generics import CreateAPIView
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework import permissions
 from rest_framework import status
 
@@ -35,6 +34,7 @@ class Index(View):
             'chats': chats,
             'user': request.user
         })
+
 
 class Registration(CreateAPIView):
     """
@@ -213,7 +213,6 @@ class ChatView(ChatDialogView):
     """
     Displays a certain chat with messages and users.
     """
-    form_class = ChatForm
     template_name = "chat/chat.html"
 
     def only_alive(self, chat):
@@ -257,7 +256,6 @@ class DialogView(ChatDialogView):
     """
     Displays a certain chat with messages and users.
     """
-    form_class = DialogForm
     template_name = "chat/dialog.html"
 
     def get_companion(self, user, cur_chat):
